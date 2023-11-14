@@ -1,0 +1,47 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.adapterTargetName": "esp32",
+    "idf.customExtraPaths": "C:\\Esp32\\esp-idf\\tools\\tools\\xtensa-esp-elf-gdb\\11.2_20220823\\xtensa-esp-elf-gdb\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\riscv32-esp-elf-gdb\\11.2_20220823\\riscv32-esp-elf-gdb\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\xtensa-esp32-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32-elf\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\xtensa-esp32s2-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32s2-elf\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\xtensa-esp32s3-elf\\esp-2021r2-patch5-8.4.0\\xtensa-esp32s3-elf\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\riscv32-esp-elf\\esp-2021r2-patch5-8.4.0\\riscv32-esp-elf\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\esp32ulp-elf\\2.35_20220830\\esp32ulp-elf\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\cmake\\3.23.1\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\openocd-esp32\\v0.11.0-esp32-20221026\\openocd-esp32\\bin;C:\\Esp32\\esp-idf\\tools\\tools\\ninja\\1.10.2;C:\\Esp32\\esp-idf\\tools\\tools\\idf-exe\\1.0.3;C:\\Esp32\\esp-idf\\tools\\tools\\ccache\\4.3\\ccache-4.3-windows-64;C:\\Esp32\\esp-idf\\tools\\tools\\dfu-util\\0.9\\dfu-util-0.9-win64",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "C:\\Esp32\\esp-idf\\tools\\tools\\openocd-esp32\\v0.11.0-esp32-20221026/openocd-esp32/share/openocd/scripts",
+        "IDF_CCACHE_ENABLE": "1"
+    },
+    "idf.espIdfPathWin": "c:\\Users\\i2CAT\\Documents\\esp-idf",
+    "idf.openOcdConfigs": [
+        "board/esp32-wrover-kit-3.3v.cfg"
+    ],
+    "idf.pythonBinPathWin": "C:\\Esp32\\esp-idf\\tools\\python_env\\idf4.4_py3.8_env\\Scripts\\python.exe",
+    "idf.toolsPathWin": "C:\\Esp32\\esp-idf\\tools",
+    "idf.portWin": "COM5",
+    "files.associations": {
+        "*.c": "c",
+        "port.h": "c",
+        "arp826_defs.h": "c",
+        "arp826.h": "c",
+        "wifi_ipcp_events.h": "c",
+        "buffermanagement.h": "c",
+        "event_groups.h": "c",
+        "wifi_ipcp.h": "c",
+        "ipcp_manager.h": "c",
+        "efcpstructures.h": "c",
+        "rina_ids.h": "c",
+        "rina_common_port.h": "c",
+        "num_mgr.h": "c",
+        "configrina.h": "c",
+        "flowallocator.h": "c",
+        "flowmessage.pb.h": "c",
+        "ribd.h": "c",
+        "rib.h": "c",
+        "rina_name.h": "c",
+        "rina_api_flows.h": "c",
+        "enrollment_api.h": "c",
+        "ipcp_normal_defs.h": "c",
+        "efcp.h": "c",
+        "ipcp_events.h": "c",
+        "wifi_ipcp_ethernet.h": "c",
+        "enrollment.h": "c",
+        "networkinterface.h": "c",
+        "pci.h": "c",
+        "esp_system.h": "c"
+    }
+}

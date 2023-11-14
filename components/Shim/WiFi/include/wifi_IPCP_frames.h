@@ -1,0 +1,21 @@
+#ifndef _COMPONENTS_SHIM_WIFI_INCLUDE_WIFI_IPCP_FRAMES_H
+#define _COMPONENTS_SHIM_WIFI_INCLUDE_WIFI_IPCP_FRAMES_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    typedef enum FRAMES_PROCESSING
+    {
+        eReleaseBuffer = 0,   /* Processing the frame did not find anything to do - just release the buffer. */
+        eProcessBuffer,       /* An Ethernet frame has a valid address - continue process its contents. */
+        eReturnEthernetFrame, /* The Ethernet frame contains an ARP826 packet that can be returned to its source. */
+        eFrameConsumed        /* Processing the Ethernet packet contents resulted in the payload being sent to the stack. */
+    } eFrameProcessingResult_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _COMPONENTS_SHIM_WIFI_INCLUDE_WIFI_IPCP_FRAMES_H
