@@ -1,0 +1,1 @@
+IRATI open source configuration files for enabling RINA IoT gateway deployed on a Raspberry PI. 
