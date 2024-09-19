@@ -216,6 +216,7 @@ extern "C"
         } connectionId_t;
 
         int get_next_invoke_id(void);
+        void reverse_memcpy(uint8_t *restrict dst, const uint8_t *restrict src, size_t n);
 
         enum eFLOW_EVENT
         {

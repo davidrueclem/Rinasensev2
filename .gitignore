@@ -73,6 +73,7 @@ _deps
 build/
 .vs/
 .vscode/
+.devcontainer/
 
 ### CMake Patch ###
 # External projects

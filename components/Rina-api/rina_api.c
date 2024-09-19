@@ -82,13 +82,13 @@ struct appRegistration_t *RINA_application_register(string_t pcNameDif,
 #if 0
     if (pcNameDif && xRinaNameFromString(pcNameDif, xDn))
         {
-            ESP_LOGE(TAG_RINA, "DIFName incorrect");
+            LOGE(TAG_RINA, "DIFName incorrect");
             xRinaNameFree(xDn);
             return NULL;
         }
     if (pcLocalApp && xRinaNameFromString(pcLocalApp, xAppn))
         {
-            ESP_LOGE(TAG_RINA, "LocalName incorrect");
+            LOGE(TAG_RINA, "LocalName incorrect");
             xRinaNameFree(pcNameDif);
             xRinaNameFree(xAppn);
             return NULL;

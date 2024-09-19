@@ -63,7 +63,7 @@ bool_t xDtpPduSend(struct dtp_t *pxDtp, struct rmt_t *pxRmt, struct du_t *pxDu)
         if (pxDu->pxPci->xSource != pxDu->pxPci->xDestination)
         {
                 /*if (dtp->dtcp->sv->rendezvous_rcvr) {
-                        ESP_LOGI(TAG_DTP,"Sending to RMT in RV at RCVR");
+                        LOGI(TAG_DTP,"Sending to RMT in RV at RCVR");
                 }*/
 
                 if (!xRmtSend(pxRmt, pxDu))

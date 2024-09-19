@@ -27,6 +27,8 @@ extern "C"
 	/* FIXME: Move or delete*/
 	ARPPacket_t *vCastPointerTo_ARPPacket_t(void *pvArgument);
 
+	ARPHeader_t *vCastPointerTo_ARPHeader_t(void *pvArgument);
+
 	MACAddress_t *vCastPointerTo_MACAddress_t(void *pvArgument);
 
 	/**

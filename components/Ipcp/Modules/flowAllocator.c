@@ -159,7 +159,7 @@ static flow_t *prvFlowAllocatorNewFlow(flowAllocateHandle_t *pxFlowRequest)
     pxDtpConfig = pvRsMemAlloc((sizeof(*pxDtpConfig)));
     pxDtpPolicySet = pvRsMemAlloc(sizeof(*pxDtpPolicySet));
 
-    // ESP_LOGI(TAG_FA, "DEst:%s", strdup(pxFlowRequest->pxRemote));
+    // LOGI(TAG_FA, "DEst:%s", strdup(pxFlowRequest->pxRemote));
 
     pxFlow->pxSourceInfo = pxFlowRequest->pxLocal;
     pxFlow->pxDestInfo = pxFlowRequest->pxRemote;

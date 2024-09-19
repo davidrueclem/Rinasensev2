@@ -11,10 +11,14 @@
 
 #include <stdio.h>
 #include <string.h>
+
+#include "BufferManagement.h"
 #include "IPCP_manager.h"
 #include "IPCP_api.h"
+
+#include "shim.h"
 #include "wifi_IPCP.h"
-#include "BufferManagement.h"
+#include "ieee802154_IPCP.h"
 
 static ipcManager_t *pxIpcManager;
 
@@ -132,13 +136,21 @@ struct ipcpInstance_t *pxIpcMngrCreateShim()
 
     // add the shimInstance into the instance list.
 
-    return pxShimWiFiCreate(xIpcpId); // hardcore to ShimWiFi
+#ifdef SHIM_WIFI_MODULE
+    return pxShimWiFiCreate(xIpcpId);
+#endif
+    /*FIX ME*/
+    /*
+    #ifdef SHIM_802154_MODULE
+        return pxShim802154Create(xIpcpId);
+    #endif */
 }
 
 /** @brief initialize the Shim IPCP task by calling the Shim_API shimInit()*/
 bool_t xIpcMngrInitShim()
 {
     LOGI(TAG_MNGR, "Initilizating Shim IPCP");
+
     if (xShimIpcpInit())
     {
         return true;
@@ -183,8 +195,15 @@ bool_t xIpcMngrInitRinaStack(void)
     if (!xIpcMngrInitShim())
         return false;
 
+#if SHIM_WIFI_MODULE
     if (!xShimEnrollToDIF(pxShimInstance->pxData))
         return false;
+#endif
+
+#if SHIM_802154_MODULE
+    if (!xShim802154EnrollToDIF(pxShimInstance->pxData))
+        return false;
+#endif
 
     RINAStackEvent_t xEnrollEvent = {
         .eEventType = eShimEnrolledEvent,
@@ -192,6 +211,18 @@ bool_t xIpcMngrInitRinaStack(void)
 
     xEnrollEvent.xData.PV = (void *)(pxShimInstance);
     xSendEventStructToIPCPTask(&xEnrollEvent, 50 * 1000);
+
+#if TESTING
+
+    /*Sending event to init validation*/
+
+    ShimTaskEvent_t xUpEvent = {
+        .eEventType = eNetworkUpEvent,
+        .xData.PV = NULL};
+
+    // xEnrollEvent.xData.PV = (void *)(pxShimInstance);
+    xSendEventStructToShimIPCPTask(&xUpEvent, 50 * 1000);
+#endif
 
     return true;
 }

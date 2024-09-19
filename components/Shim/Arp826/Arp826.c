@@ -5,7 +5,9 @@
 #include <stdlib.h>
 
 #include "common/rina_gpha.h"
+#include "common/rina_common_port.h"
 #include "common/rina_name.h"
+#include "common/rina_common.h"
 #include "portability/rslog.h"
 
 /* RINA includes. */
@@ -19,6 +21,10 @@
 // #include "IPCP_api.h"
 #include "wifi_IPCP_frames.h"
 #include "wifi_IPCP.h"
+#include "ieee802154_IPCP.h"
+#include "ieee802154_frame.h"
+#include "shim_IPCP_events.h"
+#include "shim.h"
 
 #include "IPCP_instance.h"
 
@@ -30,6 +36,15 @@
  * an external library, so it is implemented and included has FreeRTOS method.*/
 void *FreeRTOS_memscan(void *addr, int c, size_t size);
 
+static void prvARPGenerateFor802154(NetworkBufferDescriptor_t *const pxNetworkBuffer,
+									const gha_t *pxSha, const gha_t *pxTha, gpa_t *pxSpa, const gpa_t *pxTpa, uint16_t usPtype);
+
+#if SHIM_WIFI_MODULE
+static void prvARPDataGenerator(ARPPacket_t *pxARPPacket, const gha_t *pxSha, const gha_t *pxTha, const gpa_t *pxSpa, const gpa_t *pxTpa);
+#elif SHIM_802154_MODULE
+static void prvARPDataGeneratorforIEEE802154(ARPHeader_t *pxARPPacket, const gha_t *pxSha, const gha_t *pxTha, const gpa_t *pxSpa, const gpa_t *pxTpa);
+static size_t prvIeee802154Generator(ARPPacket_t *pxARPPacket, const gha_t *pxSha, const gha_t *pxTha, const gpa_t *pxSpa, const gpa_t *pxTpa);
+#endif
 /*-----------------------------------------------------------*/
 
 /* @brief Generates an ARP Packet Request to be send following the structure ARP_Header
@@ -306,7 +321,9 @@ void vARPRefreshCacheEntry(gpa_t *pxGpa, gha_t *pxMACAddress)
  */
 bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 {
+
 	NetworkBufferDescriptor_t *pxNetworkBuffer;
+	ShimTaskEvent_t xSendEvent;
 	size_t xMaxLen;
 	size_t xBufferSize;
 
@@ -324,7 +341,14 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 		return false;
 	}
 
+#if SHIM_WIFI_MODULE
 	xBufferSize = sizeof(ARPPacket_t) + (xMaxLen + sizeof(pxSha->xAddress)) * 2;
+#endif
+
+#if SHIM_802154_MODULE
+	xBufferSize = sizeof(ARPHeader_t) + (xMaxLen + sizeof(pxSha->xAddress)) * 2;
+#endif
+	LOGE(TAG_ARP, "Protocol Address MaxLen:%d", xBufferSize);
 
 	/* This is called from the context of the IPCP event task, so a block time
 	 * must not be used. */
@@ -336,10 +360,10 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 		/* FIXME: This assignment makes no sense and the compiler
 		   complains about it. */
 		/*pxNetworkBuffer->ulGpa = pxTpa->pucAddress; */
-
+#if SHIM_WIFI_MODULE
 		prvARPGeneratePacket(pxNetworkBuffer, pxSha, pxSpa, pxTpa, ARP_REQUEST);
 
-		if (xIsCallingFromShimWiFiIpcpTask())
+		if (xIsCallingFromShimIpcpTask())
 		{
 			LOGI(TAG_ARP, "Sending ARP request directly to network interface");
 
@@ -348,7 +372,6 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 		}
 		else
 		{
-			ShimWiFiTaskEvent_t xSendEvent;
 
 			LOGI(TAG_ARP, "Sending ARP request to shim IPCP task");
 
@@ -363,6 +386,21 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 				return false;
 			}
 		}
+#endif
+
+#if SHIM_802154_MODULE
+		/* Call the IEEE 802.15.4 frame generator using Broadcast */
+		gha_t *pxTha = pvRsMemAlloc(sizeof(*pxTha));
+		pxTha = pxARPCreateGHAUnknown(MAC_ADDR_802_15_4);
+
+		pxSha->ucAddressMode = ADDR_MODE_SHORT;
+		pxSha->usShortAddress = ieee802154_SHORT_ADDRESS;
+
+		prvARPGenerateFor802154(pxNetworkBuffer, pxSha, pxTha, pxSpa, pxTpa, ARP_REQUEST);
+		vPrintBytes(&pxNetworkBuffer->pucDataBuffer, pxNetworkBuffer->xDataLength);
+		vIeee802154FrameBroadcast(pxNetworkBuffer, pxSha, pxTha, 0);
+
+#endif
 	}
 	else
 	{
@@ -375,18 +413,17 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 
 gha_t *pxARPCreateGHAUnknown(eGHAType_t xType)
 {
+#if SHIM_WIFI_MODULE
 	const uint8_t ucAddr[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
-	if (xType == MAC_ADDR_802_3)
+#elif SHIM_802154_MODULE
+	const uint8_t ucAddr[8] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+#endif
+
+	gha_t *pxGha;
+
+	if (xType == MAC_ADDR_802_3 || xType == MAC_ADDR_802_15_4)
 	{
-		gha_t *pxGha;
-
-		if (xType != MAC_ADDR_802_3)
-		{
-			printf("Wrong input parameters, cannot create GHA");
-			return NULL;
-		}
-
 		pxGha = malloc(sizeof(*pxGha));
 		if (!pxGha)
 			return NULL;
@@ -397,30 +434,192 @@ gha_t *pxARPCreateGHAUnknown(eGHAType_t xType)
 		case MAC_ADDR_802_3:
 			memcpy(pxGha->xAddress.ucBytes, ucAddr, sizeof(pxGha->xAddress));
 			break;
+		case MAC_ADDR_802_15_4:
+			memcpy(pxGha->xAddress.ucBytes, ucAddr, sizeof(pxGha->xAddress));
+			break;
 		default:
 
 			break; /* Only to stop the compiler from barfing */
 		}
 
 		return pxGha;
-
-		// return gha_create_gfp(flags, MAC_ADDR_802_3, addr);
 	}
+
+	printf("Wrong input parameters, cannot create GHA");
 	return NULL;
 }
+/*
+static void prvARPDataGeneratorforIEEE802154(uint8_t *pxARPPacket, const gha_t *pxSha, const gha_t *pxTha, const gpa_t *pxSpa, const gpa_t *pxTpa)
+{
+	unsigned char *pucArpPtr;
+	size_t uxLength;
 
+	pucArpPtr = (unsigned char *)(pxARPPacket + 1);
+
+	memcpy(pucArpPtr, pxSha->xAddress.ucBytes, sizeof(pxSha->xAddress));
+	pucArpPtr += sizeof(pxSha->xAddress);
+
+	memcpy(pucArpPtr, pxSpa->pucAddress, pxSpa->uxLength);
+	pucArpPtr += pxSpa->uxLength;
+
+	// THA
+memcpy(pucArpPtr, pxTha->xAddress.ucBytes, sizeof(pxTha->xAddress));
+pucArpPtr += sizeof(pxTha->xAddress);
+
+//TPA
+memcpy(pucArpPtr, pxTpa->pucAddress, pxTpa->uxLength);
+pucArpPtr += pxTpa->uxLength;
+}
+*/
+
+static void prvARPDataGenerator(ARPPacket_t *pxARPPacket, const gha_t *pxSha, const gha_t *pxTha, const gpa_t *pxSpa, const gpa_t *pxTpa)
+{
+	unsigned char *pucArpPtr;
+	size_t uxLength;
+
+	pucArpPtr = (unsigned char *)(pxARPPacket + 1);
+
+	memcpy(pucArpPtr, pxSha->xAddress.ucBytes, sizeof(pxSha->xAddress));
+	pucArpPtr += sizeof(pxSha->xAddress);
+
+	memcpy(pucArpPtr, pxSpa->pucAddress, pxSpa->uxLength);
+	pucArpPtr += pxSpa->uxLength;
+
+	/* THA */
+	memcpy(pucArpPtr, pxTha->xAddress.ucBytes, sizeof(pxTha->xAddress));
+	pucArpPtr += sizeof(pxTha->xAddress);
+
+	/* TPA */
+	memcpy(pucArpPtr, pxTpa->pucAddress, pxTpa->uxLength);
+	pucArpPtr += pxTpa->uxLength;
+}
+
+static void prvARPGenerateFor802154(NetworkBufferDescriptor_t *const pxNetworkBuffer,
+									const gha_t *pxSha, const gha_t *pxTha, gpa_t *pxSpa, const gpa_t *pxTpa, uint16_t usPtype)
+{
+
+	ARPHeader_t *pxARPHeader;
+	size_t uxLength;
+	uint8_t *header;
+	uint16_t HType;
+	uint8_t Len;
+	uint16_t PType;
+
+	uxLength = sizeof(*pxARPHeader) + (pxSpa->uxLength + sizeof(pxSha->xAddress)) * 2;
+	LOGE(TAG_ARP, "ARP Length:%d", uxLength);
+	LOGE(TAG_ARP, "ARP Buffer Length:%d", pxNetworkBuffer->xDataLength);
+
+	/* Buffer allocation ensures that buffers always have space
+	 * for an ARP packet.  */
+	RsAssert(pxNetworkBuffer != NULL);
+	RsAssert(pxNetworkBuffer->xDataLength >= uxLength);
+
+	// pxARPHeader = vCastPointerTo_ARPHeader_t(pxNetworkBuffer->pucEthernetBuffer);
+
+	/* memcpy the const part of the header information into the correct
+	 * location in the packet.  This copies:
+	 *  xEthernetHeader.ulDestinationAddress
+	 *  xEthernetHeader.usFrameType;
+	 *  xARPHeader.usHardwareType;
+	 *  xARPHeader.usProtocolType;
+	 *  xARPHeader.ucHardwareAddressLength;
+	 *  xARPHeader.ucProtocolAddressLength;
+	 *  xARPHeader.usOperation;
+	 *  xARPHeader.xTargetHardwareAddress;
+	 */
+
+	/*
+		pxARPHeader->usHType = 0x0001;
+		// pxARPHeader->usHType = RsHtoNS(0x0006); // IEEE802
+		pxARPHeader->usPType = RsHtoNS(ETH_P_RINA);
+		pxARPHeader->ucHALength = sizeof(pxSha->xAddress.ucBytes);
+		pxARPHeader->ucPALength = pxSpa->uxLength;
+		pxARPHeader->usOperation = usPtype;
+
+		LOGE(TAG_ARP, "Type header:  %hu", pxARPHeader->usHType);
+		LOGE(TAG_ARP, "Type Operatiorn: %hu", usPtype);
+		LOGE(TAG_ARP, "Len:%d", pxSpa->uxLength);
+
+		vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer, 2);
+		vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer[2], 2);
+		vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer[4], 1);
+		vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer[5], 1);
+		vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer[6], 2);*/
+
+	HType = RsHtoNS(0x0001);
+	Len = sizeof(pxSha->xAddress.ucBytes);
+	PType = RsHtoNS(ETH_P_RINA);
+
+	unsigned char *pucArpPtr;
+
+	pucArpPtr = (unsigned char *)(header + 1);
+
+	uint8_t position = 0;
+	memcpy(&pucArpPtr, &HType, sizeof HType);
+	pucArpPtr += 2;
+	// LOGI(TAG_802154, "Length FCS:%hx", header[position]);
+
+	vPrintBytes(&pucArpPtr, 2);
+
+	memcpy(&pucArpPtr, &PType, sizeof PType);
+	pucArpPtr += 2;
+
+	memcpy(&pucArpPtr, &Len, 1);
+	pucArpPtr += 1;
+
+	memcpy(&pucArpPtr, &pxSpa->uxLength, 1);
+	pucArpPtr += 1;
+
+	memcpy(&pucArpPtr, &usPtype, 2);
+	pucArpPtr += 2;
+
+	vPrintBytes(&pucArpPtr, 8);
+
+	//	memcpy(&pucArpPtr, &pxSha->xAddress.ucBytes, sizeof(pxSha->xAddress));
+	//	pucArpPtr += sizeof(pxSha->xAddress);
+
+	// memcpy(&pucArpPtr, &pxSpa->pucAddress, pxSpa->uxLength);
+	// pucArpPtr += pxSpa->uxLength;
+
+	/* THA */
+	// memcpy(&pucArpPtr, &pxTha->xAddress.ucBytes, sizeof(pxTha->xAddress));
+	// pucArpPtr += sizeof(pxTha->xAddress);
+
+	/* TPA */
+	// memcpy(&pucArpPtr, &pxTpa->pucAddress, pxTpa->uxLength);
+	// pucArpPtr += pxTpa->uxLength;
+
+	// prvARPDataGeneratorforIEEE802154(pxARPHeader, pxSha, pxTha, pxSpa, pxTpa);
+	pxNetworkBuffer->xEthernetDataLength = position;
+
+	// vPrintBytes(&header, position);
+
+	// memcpy(&pxNetworkBuffer->pucEthernetBuffer, header, position);
+
+	LOGI(TAG_ARP, "Packet Request Generated: %dBytes", position);
+	vPrintBytes(&pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength);
+}
+
+/*uint8_t ieee802154_header(const uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
+						  ieee802154_address_t *dst, uint8_t ack, uint8_t *header, uint8_t header_length);*/
+
+/*Copy just the ARP data into the ARP header*/
+
+#if SHIM_WIFI_MODULE
 static void prvARPGeneratePacket(NetworkBufferDescriptor_t *const pxNetworkBuffer,
 								 const gha_t *pxSha, const gpa_t *pxSpa, const gpa_t *pxTpa, uint16_t usPtype)
 {
 
 	ARPPacket_t *pxARPPacket;
 	gha_t *pxTha = pvRsMemAlloc(sizeof(*pxTha));
-	unsigned char *pucArpPtr;
 	size_t uxLength;
 
 	pxTha = pxARPCreateGHAUnknown(MAC_ADDR_802_3);
 
 	uxLength = sizeof(*pxARPPacket) + (pxSpa->uxLength + sizeof(pxSha->xAddress)) * 2;
+
+	LOGE(TAG_ARP, "ARP length: %d", uxLength);
+	LOGE(TAG_ARP, "ARP length: %d", pxNetworkBuffer->xDataLength);
 
 	/* Buffer allocation ensures that buffers always have space
 	 * for an ARP packet.  */
@@ -441,37 +640,23 @@ static void prvARPGeneratePacket(NetworkBufferDescriptor_t *const pxNetworkBuffe
 	 *  xARPHeader.xTargetHardwareAddress;
 	 */
 
-	pxARPPacket->xARPHeader.usHType = RsHtoNS(0x0001);
+	// pxARPPacket->xARPHeader.usHType = RsHtoNS(0x0001);
 	pxARPPacket->xARPHeader.usPType = RsHtoNS(ETH_P_RINA);
 	pxARPPacket->xARPHeader.ucHALength = sizeof(pxSha->xAddress.ucBytes);
 	pxARPPacket->xARPHeader.ucPALength = pxSpa->uxLength;
 	pxARPPacket->xARPHeader.usOperation = usPtype;
-	pxARPPacket->xEthernetHeader.usFrameType = RsHtoNS(ETH_P_RINA_ARP);
 
+	pxARPPacket->xARPHeader.usHType = RsHtoNS(0x0001); // Ethernet
+	pxARPPacket->xEthernetHeader.usFrameType = RsHtoNS(ETH_P_RINA_ARP);
 	memcpy(pxARPPacket->xEthernetHeader.xSourceAddress.ucBytes, pxSha->xAddress.ucBytes, sizeof(pxSha->xAddress));
 	memcpy(pxARPPacket->xEthernetHeader.xDestinationAddress.ucBytes, pxTha->xAddress.ucBytes, sizeof(pxTha->xAddress));
 
-	pucArpPtr = (unsigned char *)(pxARPPacket + 1);
-
-	memcpy(pucArpPtr, pxSha->xAddress.ucBytes, sizeof(pxSha->xAddress));
-	pucArpPtr += sizeof(pxSha->xAddress);
-
-	memcpy(pucArpPtr, pxSpa->pucAddress, pxSpa->uxLength);
-	pucArpPtr += pxSpa->uxLength;
-
-	/* THA */
-	memcpy(pucArpPtr, pxTha->xAddress.ucBytes, sizeof(pxTha->xAddress));
-	pucArpPtr += sizeof(pxTha->xAddress);
-
-	/* TPA */
-	memcpy(pucArpPtr, pxTpa->pucAddress, pxTpa->uxLength);
-	pucArpPtr += pxTpa->uxLength;
-
+	prvARPDataGenerator(pxARPPacket, pxSha, pxTha, pxSpa, pxTpa);
 	pxNetworkBuffer->xDataLength = uxLength;
 
 	LOGD(TAG_ARP, "Generated Request Packet ");
 }
-
+#endif
 void vARPRemoveCacheEntry(const gpa_t *pxGpa, const gha_t *pxMACAddress)
 {
 	num_t x = 0;
@@ -556,7 +741,7 @@ eFrameProcessingResult_t eARPProcessPacket(ARPPacket_t *const pxARPFrame)
 	ucHlen = pxARPHeader->ucHALength;
 	ucPlen = pxARPHeader->ucPALength;
 
-	if (pxARPHeader->usHType != RsHtoNS(ARP_HARDWARE_TYPE_ETHERNET))
+	if (pxARPHeader->usHType != RsHtoNS(ARP_HARDWARE_TYPE_ETHERNET) || pxARPHeader->usHType != RsHtoNS(0x0006))
 	{
 		LOGE(TAG_ARP, "Unhandled ARP hardware type 0x%04X", pxARPHeader->usHType);
 		return eReturn;
@@ -699,12 +884,12 @@ gha_t *pxARPLookupGHA(const gpa_t *pxGpaToLookup)
 
 		if (xARPCache[x].ucAge == 3)
 		{
-			// ESP_LOGE(TAG_ARP, "ARP Found: %s", xARPCache[x].pxProtocolAddress->ucAddress);
+			// LOGE(TAG_ARP, "ARP Found: %s", xARPCache[x].pxProtocolAddress->ucAddress);
 			pxGHA->xAddress = xARPCache[x].pxMACAddress->xAddress;
 			pxGHA->xType = xARPCache[x].pxMACAddress->xType;
 			return pxGHA;
 		}
-		// ESP_LOGE(TAG_ARP, "ARP not Found: %s", xARPCache[x].pxProtocolAddress->ucAddress);
+		// LOGE(TAG_ARP, "ARP not Found: %s", xARPCache[x].pxProtocolAddress->ucAddress);
 	}
 
 	return NULL;
@@ -793,6 +978,11 @@ void vARPRemoveAll(void)
 /*-----------------------------------------------------------*/
 
 ARPPacket_t *vCastPointerTo_ARPPacket_t(void *pvArgument)
+{
+	return (void *)(pvArgument);
+}
+
+ARPHeader_t *vCastPointerTo_ARPHeader_t(void *pvArgument)
 {
 	return (void *)(pvArgument);
 }

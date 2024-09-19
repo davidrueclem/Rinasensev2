@@ -1,8 +1,23 @@
 #ifndef CONFIG_RINA_H
 #define CONFIG_RINA_H
 
+#define TESTING (0)
+/**************SHIM 802154 CONFIGURATION ***********/
+#define SHIM_802154_MODULE (1)
+
+#define SHIM_INTERFACE_802154 "Nodo2" //"Coordinator"
+
+#define ieee802154_COORDINATOR (1) // Zero if coordinator
+#define ieee802154_PANID_SOURCE 0x4242
+#define ieee802154_PANID_DESTINATION 0x4242
+#define ieee802154_CHANNEL 20
+#define ieee802154_SHORT_ADDRESS 0x0002 // 0x0002
+#define PAN_BROADCAST 0xFFFF
+#define SHORT_BROADCAST 0xFFFF
+#define ieee802154_MTU (256)
+
 /************* SHIM WIFI CONFIGURATION ***********/
-#define SHIM_WIFI_MODULE (1) // Zero if not shim WiFi modules is required.
+#define SHIM_WIFI_MODULE (0) // Zero if not shim WiFi modules is required.
 
 #define SHIM_PROCESS_NAME "wlan0.ue"
 #define SHIM_PROCESS_INSTANCE "1"

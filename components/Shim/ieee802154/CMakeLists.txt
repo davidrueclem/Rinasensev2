@@ -1,9 +1,10 @@
 set(reqs
   Rina-manager
   Portability
+  ieee802154
 )
 
 idf_component_register(
-  SRCS "wifi_IPCP_ethernet.c" "wifi_IPCP_ops.c"
+  SRCS "ieee802154_IPCP_frame.c" "ieee802154_IPCP_ops.c" "ieee802154_NetworkInterface.c"
   INCLUDE_DIRS "include"
   REQUIRES ${reqs})

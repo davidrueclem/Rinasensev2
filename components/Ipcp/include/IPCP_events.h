@@ -17,7 +17,7 @@ extern "C"
         eFlowBindEvent,             /* 7: Client API request to bind a flow. */
         eFlowDeallocateEvent,       /* 8: A flow must be deallocated */
         eStackRxEvent,              /* 9: The stack IPCP has queued a packet to received */
-        eShimFATimerEvent,          /* 10: A flow has been allocated on the shimWiFi*/
+        eShimFlowAllocatedEvent,    /* 10: A flow has been allocated on the shimWiFi*/
         eStackFlowAllocateEvent,    /* 11: The Software stack IPCP has received a Flow allocate request. */
         eStackAppRegistrationEvent, /* 12: The Software stack IPCP has received a AppRegistration Event*/
         eShimAppRegisteredEvent,    /* 13: The Normal IPCP has been registered into the Shim*/

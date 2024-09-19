@@ -18,9 +18,7 @@
 
 #include "RINA_API.h"
 
-#include "esp_wifi.h"
 #include "esp_system.h"
-#include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 
@@ -74,20 +72,6 @@ void app_main(void)
             {
                 ESP_LOGI(TAG_APP, "Sent Data successfully");
             }
-
-            /*xBytes = RINA_flow_read(xAppPortId, (void *)buffer, xLenBuffer);
-
-            if (xBytes > 0)
-            {
-                data = strdup(buffer);
-                ESP_LOGI(TAG_APP, "Receive data");
-                ESP_LOGI(TAG_APP, "Buffer: %s", data);
-                ESP_LOGI(TAG_APP, "Bytes received: %d", xBytes);
-            }
-            if (xBytes == 0)
-            {
-                ESP_LOGI(TAG_APP, "It was an error receiving the buffer");
-            }*/
 
             vTaskDelay(8000 / portTICK_RATE_MS);
 

@@ -1,4 +1,4 @@
-idf_component_register(SRCS "rmt.c" "enrollment.c" "connection.c"
+idf_component_register(SRCS "flowAllocator.c" "rmt.c" "enrollment.c" "connection.c"
     "delim.c"
     "dtp.c"
     "du.c"
