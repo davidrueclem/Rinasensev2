@@ -236,7 +236,8 @@ void vFlowAllocatorFlowRequest(
     if (!pxNeighbor)
     {
         LOGE(TAG_FA, "No neighbor found");
-        pxFlow->xRemoteAddress = 0;
+        return;
+        // pxFlow->xRemoteAddress = 0;
     }
 
     pxFlow->xRemoteAddress = pxNeighbor->xNeighborAddress;

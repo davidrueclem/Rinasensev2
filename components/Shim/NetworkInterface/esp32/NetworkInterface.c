@@ -249,6 +249,7 @@ BaseType_t xNetworkInterfaceConnect(void)
 BaseType_t xNetworkInterfaceOutput(NetworkBufferDescriptor_t *const pxNetworkBuffer,
 								   BaseType_t xReleaseAfterSend)
 {
+	LOGE(TAG_WIFI, "Interface called");
 	if ((pxNetworkBuffer == NULL) || (pxNetworkBuffer->pucEthernetBuffer == NULL) || (pxNetworkBuffer->xDataLength == 0))
 	{
 		LOGE(TAG_WIFI, "Invalid parameters");

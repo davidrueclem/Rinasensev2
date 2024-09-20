@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sched.h>
 
 #ifdef ESP_PLATFORM
 #include "freertos/FreeRTOS.h"
@@ -245,6 +246,7 @@ static void *prvIpcpTask(void *pvParameters)
     /* Loop, processing IPCP events. */
     for (;;)
     {
+        LOGI(TAG_IPCPMANAGER, "NORMAL TASK");
         // ipconfigWATCHDOG_TIMER();
 
         /* Check the RINA timers to see if there is any periodic
@@ -433,6 +435,7 @@ bool_t xIpcpInit(void)
         else
             xReturn = true;
 
+        pthread_join(prvIpcpTask, NULL);
         pthread_attr_destroy(&attr);
     }
     else

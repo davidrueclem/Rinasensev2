@@ -95,8 +95,11 @@ bool_t xIsCallingFromShimIpcpTask(void)
      * pthread_self on a FreeRTOS task will crash the runtime with an
      * assertion failure. You can't call this method on a task that
      * has not been started with the pthread API. */
+    LOGE(TAG_SHIM, "freertos is calling Ipcp task");
     return xTaskGetCurrentTaskHandle() == xShimIpcpTaskHandle;
 #else
+
+    LOGE(TAG_SHIM, "pthread is calling Ipcp task");
     return pthread_self() == xShimIpcpThread;
 #endif
 }
@@ -308,7 +311,7 @@ static void *prvShimIpcpTask(void *pvParameters)
 
             /* Send a network packet. The ownership will  be transferred to
              * the driver, which will release it after delivery. */
-            LOGI(TAG_SHIM, "Testing TX");
+
 #if SHIM_WIFI_MODULE
             xNetworkInterfaceOutput(pxDescriptor, true);
 #elif SHIM_802154_MODULE

@@ -10,5 +10,6 @@
         "buffermanagement.h": "c",
         "rina_common_port.h": "c",
         "list.h": "c"
-    }
+    },
+    "idf.portWin": "COM10"
 }
