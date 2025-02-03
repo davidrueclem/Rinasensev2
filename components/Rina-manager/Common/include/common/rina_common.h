@@ -54,13 +54,13 @@ typedef struct xDIF_CONFIG
 } difConfig_t;
 
 /* Endian related definitions. */
-//#if ( ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN )
+// #if ( ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN )
 
 /* FreeRTOS_htons / FreeRTOS_htonl: some platforms might have built-in versions
  * using a single instruction so allow these versions to be overridden. */
-//#ifndef FreeRTOS_htons
+// #ifndef FreeRTOS_htons
 #define FreeRTOS_htons(usIn) ((uint16_t)(((usIn) << 8U) | ((usIn) >> 8U)))
-//#endif
+// #endif
 
 #ifndef FreeRTOS_htonl
 #define FreeRTOS_htonl(ulIn)                                        \
@@ -71,12 +71,12 @@ typedef struct xDIF_CONFIG
                        ((((uint32_t)(ulIn))) >> 24)))
 #endif /* ifndef FreeRTOS_htonl */
 
-//#else /* ipconfigBYTE_ORDER */
+// #else /* ipconfigBYTE_ORDER */
 
-//#define FreeRTOS_htons( x )    ( ( uint16_t ) ( x ) )
-//#define FreeRTOS_htonl( x )    ( ( uint32_t ) ( x ) )
+// #define FreeRTOS_htons( x )    ( ( uint16_t ) ( x ) )
+// #define FreeRTOS_htonl( x )    ( ( uint32_t ) ( x ) )
 
-//#endif /* ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN */
+// #endif /* ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN */
 
 #define FreeRTOS_ntohs(x) FreeRTOS_htons(x)
 #define FreeRTOS_ntohl(x) FreeRTOS_htonl(x)
@@ -90,6 +90,8 @@ typedef struct xDIF_CONFIG
 // BaseType_t xRINAStringDup(const string_t *pcSrc, string_t **pcDst);
 
 // name_t *xRINAstringToName(codownnst string_t *pxInput);
+
+void vPrintBytes(void *ptr, int size);
 
 void memcheck(void);
 

@@ -47,7 +47,7 @@ extern "C"
 
 	bool_t xIpcMngrInit(void);
 	struct ipcpInstance_t *pxIpcMngrCreateShim(void);
-	bool_t xIpcMngrInitShim();
+	// bool_t xIpcMngrInitShim();
 	portId_t xIpcMngrAllocatePortId(void);
 
 	bool_t xIpcMngrInitRinaStack(void);

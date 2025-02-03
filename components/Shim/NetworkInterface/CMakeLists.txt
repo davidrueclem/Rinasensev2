@@ -7,7 +7,7 @@ if("$ENV{TARGET_TYPE}" STREQUAL "freertos_idf")
 
   idf_component_register(SRCS "${NETWORKINTERFACE_MODULE}/NetworkInterface.c"
     INCLUDE_DIRS "include" "mq/include"
-    REQUIRES Common Rina-manager FreeRTOS-Plus-POSIX)
+    REQUIRES Common Rina-manager FreeRTOS-Plus-POSIX esp_wifi esp_netif)
 else()
   rs_include_component(NetworkInterface
     DIR "${CMAKE_SOURCE_DIR}/components/NetworkInterface")

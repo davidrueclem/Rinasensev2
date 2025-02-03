@@ -79,7 +79,7 @@ static struct ipcpInstance_t *prvNormalIPCPFindInstance(struct ipcpFactoryData_t
 
                         if (pxInstance->xType == xType)
                         {
-                                // ESP_LOGI(TAG_IPCPMANAGER, "Instance founded %p, Type: %d", pxInstance, pxInstance->xType);
+                                // LOGI(TAG_IPCPMANAGER, "Instance founded %p, Type: %d", pxInstance, pxInstance->xType);
                                 return pxInstance;
                         }
                 }
@@ -228,7 +228,7 @@ cepId_t xNormalConnectionCreateRequest(struct efcpContainer_t *pxEfcpc,
         /*        pxCepEntry = pvPortMalloc(sizeof(*pxCepEntry)); // error
                 if (!pxCepEntry)
                 {
-                        ESP_LOGE(TAG_IPCPNORMAL, "Could not create a cep_id entry, bailing out");
+                        LOGE(TAG_IPCPNORMAL, "Could not create a cep_id entry, bailing out");
                         xEfcpConnectionDestroy(pxData->pxEfcpc, xCepId);
                         return cep_id_bad();
                 }*/
@@ -238,7 +238,7 @@ cepId_t xNormalConnectionCreateRequest(struct efcpContainer_t *pxEfcpc,
 
         /*/ipcp = kipcm_find_ipcp(default_kipcm, data->id);
         if (!ipcp) {
-                ESP_LOGE(TAG_IPCPNORMALNORMAL,"KIPCM could not retrieve this IPCP");
+                LOGE(TAG_IPCPNORMALNORMAL,"KIPCM could not retrieve this IPCP");
                 xEfcpConnectionDestroy(pxData->efcpc, cep_id);
                 return cep_id_bad();
         }*/
@@ -251,7 +251,7 @@ cepId_t xNormalConnectionCreateRequest(struct efcpContainer_t *pxEfcpc,
         /*
                 if (!pxFlow) {
                         //spin_unlock_bh(&data->lock);
-                        ESP_LOGE(TAG_IPCPNORMAL,"Could not retrieve normal flow to create connection");
+                        LOGE(TAG_IPCPNORMAL,"Could not retrieve normal flow to create connection");
                         xEfcpConnectionDestroy(pxData->efcpc, xCepId);
                         return cep_id_bad();
                 }
@@ -260,7 +260,7 @@ cepId_t xNormalConnectionCreateRequest(struct efcpContainer_t *pxEfcpc,
                                                       port_id,
                                                       ipcp)) {
                         spin_unlock_bh(&data->lock);
-                        ESP_LOGE(TAG_IPCPNORMAL,"Could not bind flow with user_ipcp");
+                        LOGE(TAG_IPCPNORMAL,"Could not bind flow with user_ipcp");
                         efcp_connection_destroy(data->efcpc, cep_id);
                         return cep_id_bad();
                 }
@@ -327,13 +327,13 @@ static bool_t pvNormalAssignToDif(struct ipcpInstanceData_t *pxData, name_t *pxD
 
         if (! pxEfcpConfig)
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "No EFCP configuration in the dif_info");
+                LOGE(TAG_IPCPNORMAL, "No EFCP configuration in the dif_info");
                 return pdFALSE;
         }
 
         if (!pxEfcpConfig->pxDtCons)
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "Configuration constants for the DIF are bogus...");
+                LOGE(TAG_IPCPNORMAL, "Configuration constants for the DIF are bogus...");
                 efcp_config_free(efcp_config);
                 return pdFALSE;
         }
@@ -346,7 +346,7 @@ static bool_t pvNormalAssignToDif(struct ipcpInstanceData_t *pxData, name_t *pxD
 
         if (!pxRmtConfig)
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "No RMT configuration in the dif_info");
+                LOGE(TAG_IPCPNORMAL, "No RMT configuration in the dif_info");
                 return pdFALSE;
         }*/
 
@@ -358,7 +358,7 @@ static bool_t pvNormalAssignToDif(struct ipcpInstanceData_t *pxData, name_t *pxD
         /*
                 if (rmt_config_set(data->rmt, rmt_config))
                 {
-                        ESP_LOGE(TAG_IPCPNORMAL, "Could not set RMT conf");
+                        LOGE(TAG_IPCPNORMAL, "Could not set RMT conf");
                         return pdFALSE;
                 }
 
@@ -372,12 +372,12 @@ static bool_t pvNormalAssignToDif(struct ipcpInstanceData_t *pxData, name_t *pxD
                 }
                 if (sdup_config_set(data->sdup, sm_config))
                 {
-                        ESP_LOGE(TAG_IPCPNORMAL, "Could not set SDUP conf");
+                        LOGE(TAG_IPCPNORMAL, "Could not set SDUP conf");
                         return -1;
                 }
                 if (sdup_dt_cons_set(data->sdup, dt_cons_dup(efcp_config->dt_cons)))
                 {
-                        ESP_LOGE(TAG_IPCPNORMAL, "Could not set dt_cons in SDUP");
+                        LOGE(TAG_IPCPNORMAL, "Could not set dt_cons in SDUP");
                         return -1;
                 }*/
 
@@ -479,7 +479,7 @@ bool_t xNormalMgmtDuPost(struct ipcpInstanceData_t *pxData, portId_t xPortId, st
                 return false;
         }
         /*if (!IsDuOk(pxDu)) {
-                ESP_LOGE(TAG_IPCPNORMAL,"Bogus management SDU");
+                LOGE(TAG_IPCPNORMAL,"Bogus management SDU");
                 xDuDestroy(pxDu);
                 return pdFALSE;
         }*/
@@ -662,7 +662,7 @@ static bool_t prvRemoveCepIdFromFlow(struct normalFlow_t *pxFlow,
 #if 0
         
 
-        ESP_LOGI(TAG_IPCPNORMAL, "Finding a Flow in the normal IPCP list");
+        LOGI(TAG_IPCPNORMAL, "Finding a Flow in the normal IPCP list");
 
         struct normalFlow_t *pxFlow;
 
@@ -673,7 +673,7 @@ static bool_t prvRemoveCepIdFromFlow(struct normalFlow_t *pxFlow,
 
         if (listLIST_IS_EMPTY(&(pxFlow->xCepIdsList)) == pdTRUE)
         {
-                ESP_LOGI(TAG_IPCPNORMAL, "Flow CepIds list is empty");
+                LOGI(TAG_IPCPNORMAL, "Flow CepIds list is empty");
                 return NULL;
         }
 
@@ -697,14 +697,14 @@ static bool_t prvRemoveCepIdFromFlow(struct normalFlow_t *pxFlow,
                 if (pxFlow && pxFlow->xActive == xCepId)
                 {
 
-                        // ESP_LOGI(TAG_IPCPNORMAL, "Flow founded %p, portID: %d, portState:%d", pxFlow, pxFlow->xPortId, pxFlow->eState);
+                        // LOGI(TAG_IPCPNORMAL, "Flow founded %p, portID: %d, portState:%d", pxFlow, pxFlow->xPortId, pxFlow->eState);
                         return pxFlow;
                 }
 
                 pxListItem = listGET_NEXT(pxListItem);
         }
 
-        ESP_LOGI(TAG_IPCPNORMAL, "Flow not founded");
+        LOGI(TAG_IPCPNORMAL, "Flow not founded");
         return NULL;
 
         struct cep_ids_entry *pos, *next;
@@ -755,7 +755,7 @@ static struct normalFlow_t *prvFindFlowCepid(cepId_t xCepId)
                 if (pxFlow && pxFlow->xActive == xCepId)
                 {
 
-                        // ESP_LOGI(TAG_IPCPNORMAL, "Flow founded %p, portID: %d, portState:%d", pxFlow, pxFlow->xPortId, pxFlow->eState);
+                        // LOGI(TAG_IPCPNORMAL, "Flow founded %p, portID: %d, portState:%d", pxFlow, pxFlow->xPortId, pxFlow->eState);
                         return pxFlow;
                 }
 

@@ -5,7 +5,9 @@
 #include <stdlib.h>
 
 #include "common/rina_gpha.h"
+#include "common/rina_common_port.h"
 #include "common/rina_name.h"
+#include "common/rina_common.h"
 #include "portability/rslog.h"
 
 /* RINA includes. */
@@ -16,11 +18,14 @@
 // #include "ShimIPCP.h"
 #include "configSensor.h"
 // #include "IPCP.h"
-// #include "IPCP_api.h"
+#include "IPCP_api.h"
 #include "wifi_IPCP_frames.h"
 #include "wifi_IPCP.h"
+#include "ieee802154_IPCP.h"
+#include "ieee802154_frame.h"
 
 #include "IPCP_instance.h"
+#include "IPCP_events.h"
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? a : b)
@@ -37,6 +42,9 @@ void *FreeRTOS_memscan(void *addr, int c, size_t size);
  * */
 static void prvARPGeneratePacket(NetworkBufferDescriptor_t *const pxNetworkBuffer,
 								 const gha_t *pxSha, const gpa_t *pxSpa, const gpa_t *pxTpa, uint16_t usPtype);
+
+/* FIXME: Move or delete*/
+ARPPacket_t *vCastPointerTo_ARPPacket_t(void *pvArgument);
 
 /* @brief create a broadcast MAC Address to send ARP packets*/
 gha_t *pxARPCreateGHAUnknown(eGHAType_t xType);
@@ -211,7 +219,7 @@ void vARPRefreshCacheEntry(gpa_t *pxGpa, gha_t *pxMACAddress)
 				 * is relaxed in this case and a return is permitted as an
 				 * optimisation. */
 				xARPCache[x].ucAge = (uint8_t)MAX_ARP_AGE; // update ARP Age
-				xARPCache[x].ucValid = (uint8_t) true;	   // update ucValid
+				xARPCache[x].ucValid = (uint8_t)true;	   // update ucValid
 				return;									   // Do not update cache entry because there is already an entry in cache.
 			}
 
@@ -279,12 +287,12 @@ void vARPRefreshCacheEntry(gpa_t *pxGpa, gha_t *pxMACAddress)
 
 		/* And this entry does not need immediate attention */
 		xARPCache[xUseEntry].ucAge = (uint8_t)MAX_ARP_AGE;
-		xARPCache[xUseEntry].ucValid = (uint8_t) true;
+		xARPCache[xUseEntry].ucValid = (uint8_t)true;
 	}
 	else if (xIpcpEntry < 0)
 	{
 		xARPCache[xUseEntry].ucAge = (uint8_t)MAX_ARP_RETRANSMISSIONS;
-		xARPCache[xUseEntry].ucValid = (uint8_t) false;
+		xARPCache[xUseEntry].ucValid = (uint8_t)false;
 	}
 	else
 	{
@@ -339,7 +347,7 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 
 		prvARPGeneratePacket(pxNetworkBuffer, pxSha, pxSpa, pxTpa, ARP_REQUEST);
 
-		if (xIsCallingFromShimWiFiIpcpTask())
+		if (xIsCallingFromIpcpTask())
 		{
 			LOGI(TAG_ARP, "Sending ARP request directly to network interface");
 
@@ -348,17 +356,18 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 		}
 		else
 		{
-			ShimWiFiTaskEvent_t xSendEvent;
+			RINAStackEvent_t xSendEvent;
 
-			LOGI(TAG_ARP, "Sending ARP request to shim IPCP task");
+			LOGI(TAG_ARP, "Sending ARP request to IPCP");
 
-			/* Send a message to the shim IPCP-task to send this ARP packet. */
+			/* Send a message to the IPCP-task to send this ARP packet. */
 			xSendEvent.eEventType = eNetworkTxEvent;
 			xSendEvent.xData.PV = (void *)pxNetworkBuffer;
 
-			if (!xSendEventStructToShimIPCPTask(&xSendEvent, 1000))
+			if (!xSendEventStructToIPCPTask(&xSendEvent, 1000))
 			{
 				/* Failed to send the message, so release the network buffer. */
+				LOGE(TAG_ARP, "Se elimina?");
 				vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
 				return false;
 			}
@@ -597,6 +606,7 @@ eFrameProcessingResult_t eARPProcessPacket(ARPPacket_t *const pxARPFrame)
 	pxTmpSha = pxCreateGHA(MAC_ADDR_802_3, (MACAddress_t *)ucSha);
 	pxTmpTpa = pxCreateGPA(ucTpa, (size_t)ucPlen);
 	pxTmpTha = pxCreateGHA(MAC_ADDR_802_3, (MACAddress_t *)ucTha);
+	// vARPPrintCache();
 
 	if (!xARPAddressGPAShrink(pxTmpSpa, 0x00))
 	{
@@ -645,12 +655,18 @@ eFrameProcessingResult_t eARPProcessPacket(ARPPacket_t *const pxARPFrame)
 			return eReturn;
 		}
 
-		/* The request is for the address of this IoT node.  Add the
-		 * entry into the ARP cache, or refresh the entry if it
-		 * already exists.*/
-		vARPRefreshCacheEntry(pxTmpSpa, pxTmpSha);
+		// handle->ha = sha;
+		// handle->pa = spa;
 
-		/* Generate a reply payload in the same buffer. */
+		// vARPAddCacheEntry( handle );
+
+		// The request is for the address of this IoT node.  Add the
+		// entry into the ARP cache, or refresh the entry if it
+		// already exists.
+		vARPRefreshCacheEntry(pxTmpSpa, pxTmpSha);
+		// ESP_LOGE(TAG_ARP,"TArget:%s", pxTmpSha);
+
+		// Generate a reply payload in the same buffer.
 		pxARPHeader->usOperation = (uint16_t)ARP_REPLY;
 
 		eReturn = eReturnEthernetFrame;
@@ -659,7 +675,6 @@ eFrameProcessingResult_t eARPProcessPacket(ARPPacket_t *const pxARPFrame)
 
 	case ARP_REPLY:
 
-		LOGD(TAG_ARP, "Processing ARP Reply packet");
 		pxHandle = pvRsMemAlloc(sizeof(*pxHandle));
 
 		pxHandle->pxHa = pxTmpSha;
@@ -733,7 +748,7 @@ eARPLookupResult_t eARPLookupGPA(const gpa_t *pxGpaToLookup)
 		if (xGPACmp(xARPCache[x].pxProtocolAddress, pxGpaToLookup))
 		{
 			/* A matching valid entry was found. */
-			if (xARPCache[x].ucValid == (uint8_t) false)
+			if (xARPCache[x].ucValid == (uint8_t)false)
 			{
 				/* This entry is waiting an ARP reply, so is not valid. */
 				eReturn = eCantSendPacket;
@@ -793,11 +808,6 @@ void vARPRemoveAll(void)
 /*-----------------------------------------------------------*/
 
 ARPPacket_t *vCastPointerTo_ARPPacket_t(void *pvArgument)
-{
-	return (void *)(pvArgument);
-}
-
-MACAddress_t *vCastPointerTo_MACAddress_t(void *pvArgument)
 {
 	return (void *)(pvArgument);
 }
@@ -920,7 +930,7 @@ void vARPPrintCache(void)
 			prvARPPrintCacheItem(x);
 		xCount++;
 	}
-	LOGD(TAG_ARP, "Arp has %d entries\n", xCount);
+	LOGI(TAG_ARP, "Arp has %d entries\n", xCount);
 }
 
 void vARPPrintMACAddress(const gha_t *pxGha)

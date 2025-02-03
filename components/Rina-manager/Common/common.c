@@ -46,3 +46,13 @@ int get_next_invoke_id(void)
 {
     return (invoke_id % INT_MAX == 0) ? (invoke_id = 1) : invoke_id++;
 }
+
+void reverse_memcpy(uint8_t *restrict dst, const uint8_t *restrict src, size_t n)
+{
+    size_t i;
+
+    for (i = 0; i < n; ++i)
+    {
+        dst[n - 1 - i] = src[i];
+    }
+}

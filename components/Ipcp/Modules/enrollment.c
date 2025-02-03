@@ -170,7 +170,7 @@ neighborInfo_t *pxEnrollmentCreateNeighInfo(string_t pcApName, portId_t xN1Port)
 }
 
 /*EnrollmentInit should create neighbor and enrollment object into the RIB*/
-void xEnrollmentInit(struct ipcpInstanceData_t *pxIpcpData, portId_t xN1PortId)
+void vEnrollmentInit(struct ipcpInstanceData_t *pxIpcpData, portId_t xN1PortId)
 {
         LOGI(TAG_ENROLLMENT, "-------- Init Enrollment Task --------");
         name_t *pxSource;
@@ -360,7 +360,7 @@ bool_t xEnrollmentHandleStartR(string_t pcRemoteApName, serObjectValue_t *pxSerO
         /*
                 if (pxSerObjValue == NULL)
                 {
-                        ESP_LOGE(TAG_ENROLLMENT, "Serialized Object Value is NULL");
+                        LOGE(TAG_ENROLLMENT, "Serialized Object Value is NULL");
                         return pdFALSE;
                 }
 
@@ -369,7 +369,7 @@ bool_t xEnrollmentHandleStartR(string_t pcRemoteApName, serObjectValue_t *pxSerO
                 pxNeighborInfo = pxEnrollmentFindNeighbor(pcRemoteApName);
                 if (pxNeighborInfo == NULL)
                 {
-                        ESP_LOGE(TAG_ENROLLMENT, "There is no Neighbor Info in the List");
+                        LOGE(TAG_ENROLLMENT, "There is no Neighbor Info in the List");
                         return pdFALSE;
                 }
 
@@ -436,8 +436,8 @@ bool_t xEnrollmentHandleStop(struct ribObject_t *pxEnrRibObj,
                 return false;
         }
 
-        // ESP_LOGI(TAG_ENROLLMENT, "Enrollment finished with IPCP %s", pxNeighborInfo->pcApName);
-        // ESP_LOGI(TAG_ENROLLMENT, "Enrollment STOP");
+        // LOGI(TAG_ENROLLMENT, "Enrollment finished with IPCP %s", pxNeighborInfo->pcApName);
+        // LOGI(TAG_ENROLLMENT, "Enrollment STOP");
 
         return true;
 }
@@ -475,7 +475,7 @@ bool_t xEnrollmentHandleOperationalStart(struct ribObject_t *pxOperRibObj,
                 return false;
         }
 
-        // ESP_LOGI(TAG_ENROLLMENT,"Enrollment finished with IPCP %s", pxNeighborInfo->xAPName);
+        // LOGI(TAG_ENROLLMENT,"Enrollment finished with IPCP %s", pxNeighborInfo->xAPName);
 
         return true;
 }

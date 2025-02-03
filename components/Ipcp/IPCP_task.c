@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sched.h>
 
 #ifdef ESP_PLATFORM
 #include "freertos/FreeRTOS.h"
@@ -110,7 +111,7 @@ static void prvCheckNetworkTimers(void)
 {
     /* Is it time for N1FlowAllocatedTimer processing? */
     // if (bIPCPTimerCheck(&xN1FlowAllocatedTimer) == false)
-    //(void)xSendEventToIPCPTask(eShimFATimerEvent);
+    //(void)xSendEventToIPCPTask(eShimFlowAllocatedEvent);
     //  LOGE(TAG_IPCPNORMAL, "Timer N1 FA run out");
 }
 
@@ -129,12 +130,12 @@ static long prvCalculateSleepTimeUS()
     /* Start with the maximum sleep time, then check this against the remaining
      * time in any other timers that are active. */
     xMaximumSleepTimeUS = MAX_IPCP_TASK_SLEEP_TIME_US;
-
-    if (xFATimer.bActive && xFATimer.ulRemainingTimeUS < xMaximumSleepTimeUS)
-        xMaximumSleepTimeUS = xFATimer.ulRemainingTimeUS;
-    if (xN1FlowAllocatedTimer.bActive && xN1FlowAllocatedTimer.ulRemainingTimeUS < xMaximumSleepTimeUS)
-        xMaximumSleepTimeUS = xN1FlowAllocatedTimer.ulRemainingTimeUS;
-
+    /*
+        if (xFATimer.bActive && xFATimer.ulRemainingTimeUS < xMaximumSleepTimeUS)
+            xMaximumSleepTimeUS = xFATimer.ulRemainingTimeUS;
+        if (xN1FlowAllocatedTimer.bActive && xN1FlowAllocatedTimer.ulRemainingTimeUS < xMaximumSleepTimeUS)
+            xMaximumSleepTimeUS = xN1FlowAllocatedTimer.ulRemainingTimeUS;
+    */
     return xMaximumSleepTimeUS;
 }
 
@@ -245,6 +246,7 @@ static void *prvIpcpTask(void *pvParameters)
     /* Loop, processing IPCP events. */
     for (;;)
     {
+        LOGI(TAG_IPCPMANAGER, "NORMAL TASK");
         // ipconfigWATCHDOG_TIMER();
 
         /* Check the RINA timers to see if there is any periodic
@@ -278,7 +280,7 @@ static void *prvIpcpTask(void *pvParameters)
                 LOGE(TAG_IPCPNORMAL, "IPCP not registered into the shim");
                 break;
             } // should be void, the normal should control if there is an error.
-
+            LOGI(TAG_IPCPNORMAL, "IPCP registered into the shim");
             xN1PortId = xIpcMngrAllocatePortId(); // check this
 
             /* Normal IPCP request a Flow Allocation to the Shim */
@@ -287,7 +289,7 @@ static void *prvIpcpTask(void *pvParameters)
 
             break;
 
-        case eShimFATimerEvent:
+        case eShimFlowAllocatedEvent:
 
             LOGE(TAG_IPCPNORMAL, "Check if the shim flow was allocated: %d", xN1FlowAllocatedTimer.bActive);
 
@@ -295,7 +297,7 @@ static void *prvIpcpTask(void *pvParameters)
             {
                 LOGE(TAG_IPCPNORMAL, "ALLOCATED: %d", pxIpcpData->pxRmt->pxN1Port->eState);
                 // xN1FlowAllocatedTimer.bActive = false;
-                (void)xEnrollmentInit(pxIpcpData, xN1PortId);
+                (void)vEnrollmentInit(pxIpcpData, xN1PortId);
             }
             else
             {
@@ -304,7 +306,7 @@ static void *prvIpcpTask(void *pvParameters)
             }
 
             /*Start the Enrollment Task*/
-            //(void)xEnrollmentInit(pxIpcpData, xN1PortId);
+            //(void)vEnrollmentInit(pxIpcpData, xN1PortId);
 
             break;
 
@@ -433,6 +435,7 @@ bool_t xIpcpInit(void)
         else
             xReturn = true;
 
+        pthread_join(prvIpcpTask, NULL);
         pthread_attr_destroy(&attr);
     }
     else

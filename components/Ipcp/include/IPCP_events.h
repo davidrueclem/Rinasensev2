@@ -11,13 +11,18 @@ extern "C"
     typedef enum RINA_EVENTS
     {
         eNoEvent = -1,
+        eNetworkDownEvent,          /* 0: The network interface has been lost and/or needs [re]connecting. */
+        eNetworkRxEvent,            /* 1: The network interface has queued a received Ethernet frame. */
+        eNetworkTxEvent,            /* 2: Let the Shim-task send a network packet. */
+        eARPTimerEvent,             /* 3: The ARP timer expired. */
+        eNetworkUpEvent,            /* 4: Testing*/
         eShimEnrolledEvent,         /* 3: Shim Enrolled: network Interface Initialized*/
         eStackTxEvent,              /* 5: The software stack IPCP has queued a packet to transmit. */
         eFATimerEvent,              /* 6: See if any IPCP socket needs attention. */
         eFlowBindEvent,             /* 7: Client API request to bind a flow. */
         eFlowDeallocateEvent,       /* 8: A flow must be deallocated */
         eStackRxEvent,              /* 9: The stack IPCP has queued a packet to received */
-        eShimFATimerEvent,          /* 10: A flow has been allocated on the shimWiFi*/
+        eShimFlowAllocatedEvent,    /* 10: A flow has been allocated on the shimWiFi*/
         eStackFlowAllocateEvent,    /* 11: The Software stack IPCP has received a Flow allocate request. */
         eStackAppRegistrationEvent, /* 12: The Software stack IPCP has received a AppRegistration Event*/
         eShimAppRegisteredEvent,    /* 13: The Normal IPCP has been registered into the Shim*/

@@ -37,7 +37,7 @@ gpa_t *pxNameToGPA(const name_t *pcName)
 
 	if (!pcTmp)
 	{
-		LOGI(TAG_SHIM, "Name to String not correct");
+		LOGI(TAG_ARP, "Name to String not correct");
 		return NULL;
 	}
 
@@ -46,7 +46,7 @@ gpa_t *pxNameToGPA(const name_t *pcName)
 
 	if (!pxGpa)
 	{
-		LOGI(TAG_SHIM, "GPA was not created correct");
+		LOGI(TAG_ARP, "GPA was not created correct");
 		vRsMemFree(pcTmp);
 		return NULL;
 	}
@@ -77,7 +77,7 @@ gpa_t *pxCreateGPA(const buffer_t pucAddress, size_t uxLength)
 
 	if (!pucAddress || uxLength == 0)
 	{
-		LOGI(TAG_SHIM, "Bad input parameters, cannot create GPA");
+		LOGI(TAG_ARP, "Bad input parameters, cannot create GPA");
 		return NULL;
 	}
 
@@ -97,8 +97,8 @@ gpa_t *pxCreateGPA(const buffer_t pucAddress, size_t uxLength)
 
 	memcpy(pxGPA->pucAddress, pucAddress, pxGPA->uxLength);
 
-	LOGI(TAG_SHIM, "CREATE GPA address: %s", pxGPA->pucAddress);
-	LOGI(TAG_SHIM, "CREATE GPA size: %zu", pxGPA->uxLength);
+	LOGI(TAG_ARP, "CREATE GPA address: %s", pxGPA->pucAddress);
+	LOGI(TAG_ARP, "CREATE GPA size: %zu", pxGPA->uxLength);
 
 	return pxGPA;
 }
@@ -107,39 +107,43 @@ gha_t *pxCreateGHA(eGHAType_t xType, const MACAddress_t *pxAddress) // Changes t
 {
 	gha_t *pxGha;
 
-	if (xType != MAC_ADDR_802_3)
+	if (xType == MAC_ADDR_802_3 || xType == MAC_ADDR_802_15_4)
 	{
-		LOGE(TAG_SHIM, "Wrong input parameters, cannot create GHA");
-		return NULL;
+		pxGha = pvRsMemAlloc(sizeof(*pxGha));
+		if (!pxGha)
+			return NULL;
+
+		pxGha->xType = xType;
+		memcpy(pxGha->xAddress.ucBytes, pxAddress->ucBytes, sizeof(pxGha->xAddress));
+		if(xType == MAC_ADDR_802_15_4)
+		{
+			
+		}
+
+		return pxGha;
 	}
 
-	pxGha = pvRsMemAlloc(sizeof(*pxGha));
-	if (!pxGha)
-		return NULL;
-
-	pxGha->xType = xType;
-	memcpy(pxGha->xAddress.ucBytes, pxAddress->ucBytes, sizeof(pxGha->xAddress));
-
-	return pxGha;
+	LOGE(TAG_ARP, "Wrong input parameters, cannot create GHA");
+	return NULL;
 }
 
 bool_t xIsGPAOK(const gpa_t *pxGpa)
 {
 	if (!pxGpa)
 	{
-		LOGI(TAG_SHIM, " !Gpa");
+		LOGI(TAG_ARP, " !Gpa");
 		return false;
 	}
 
 	if (pxGpa->pucAddress == NULL)
 	{
-		LOGI(TAG_SHIM, "xIsGPAOK Address is NULL");
+		LOGI(TAG_ARP, "xIsGPAOK Address is NULL");
 		return false;
 	}
 
 	if (pxGpa->uxLength == 0)
 	{
-		LOGI(TAG_SHIM, "Length = 0");
+		LOGI(TAG_ARP, "Length = 0");
 		return false;
 	}
 	return true;
@@ -149,16 +153,16 @@ bool_t xIsGHAOK(const gha_t *pxGha)
 {
 	if (!pxGha)
 	{
-		LOGI(TAG_SHIM, "No Valid GHA");
+		LOGI(TAG_ARP, "No Valid GHA");
 		return false;
 	}
 
-	if (pxGha->xType != MAC_ADDR_802_3)
+	if (pxGha->xType == MAC_ADDR_802_3 || pxGha->xType == MAC_ADDR_802_15_4)
 	{
-		return false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 bool_t xGPACmp(const gpa_t *gpa1, const gpa_t *gpa2)

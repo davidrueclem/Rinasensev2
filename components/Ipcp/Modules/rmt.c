@@ -288,14 +288,14 @@ bool_t xRmtReceive(struct ipcpInstanceData_t *pxData, struct du_t *pxDu, portId_
 
 	/* SDU Protection to be implemented after testing if it is required.
 	if (sdup_unprotect_pdu(n1_port->sdup_port, pxDu)) {
-		ESP_LOGE(TAG_RMT,"Failed to unprotect PDU");
+		LOGE(TAG_RMT,"Failed to unprotect PDU");
 		xDuDestroy(pxDu);
 		return pdFALSE;
 	}*/
 
 	/* This one updates the pci->sdup_header and pdu->skb->data pointers
 	if (sdup_get_lifetime_limit(n1_port->sdup_port, pxDu)) {
-		ESP_LOGE(TAG_RMT,"Failed to get PDU's TTL");
+		LOGE(TAG_RMT,"Failed to get PDU's TTL");
 		xDuDestroy(pxDu);
 		return pdFALSE;
 	}*/

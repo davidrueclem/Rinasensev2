@@ -1,6 +1,6 @@
 # The following lines of boilerplate have to be in your project's
 # CMakeLists in this exact order for cmake to work correctly
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.5)
 
 set(TARGET_TYPE "freertos_idf"
     CACHE STRING "Type of build: 'linux', 'freertos_idf', 'arduino_esp32'")
@@ -22,6 +22,7 @@ if("${TARGET_TYPE}" STREQUAL "" OR "${TARGET_TYPE}" STREQUAL "freertos_idf")
         include($ENV{IDF_PATH}/tools/cmake/project.cmake)
         add_compile_definitions(configUSE_POSIX_ERRNO=1)
         project(RINA_sensor)
+        idf_build_set_property(COMPILE_OPTIONS "-Wno-format-nonliteral;-Wno-format-security;-Wformat=0" APPEND)
     else()
         message(FATAL_ERROR "The 'freertos_idf' target needs the IDF_PATH environment variable to be defined")
     endif()
@@ -58,6 +59,7 @@ else()
         -Wno-unused-function
         -Wno-unused-variable
         -Wno-unused-parameter
+        -Wno-error=format= -Wno-format
 
         # Debugging information
         -ggdb3

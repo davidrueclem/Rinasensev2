@@ -1,6 +1,8 @@
 #ifndef CONFIG_SENSOR_H
 #define CONFIG_SENSOR_H
 
+#include "configRINA.h"
+
 /*********** Miscelaneous ***********************/
 
 /*-----------------------------------------------------------*/
@@ -26,6 +28,10 @@
 /********* Define BLE Parameters ****************/
 
 #define SHIM_BLE_MODULE (0)
+
+/********** Define 802.15.4 Parameters **********/
+#define TAG_802154 "[NetInterface]"
+#define TAG_SHIM_802154 "[SHIM_802154]"
 
 /*********  Define WiFi Parameters *************/
 
@@ -53,7 +59,13 @@
 #define MAX_ARP_AGE (5)
 #define MAX_ARP_RETRANSMISSIONS (5)
 
+#ifdef SHIM_802154_MODULE
+// #define MAC_ADDRESS_LENGTH_BYTES (8)
+#endif
+
+#ifdef SHIM_WIFI_MODULE
 #define MAC_ADDRESS_LENGTH_BYTES (6)
+#endif
 
 /*TAG for Debugging*/
 #define TAG_ARP "[ARP]"
