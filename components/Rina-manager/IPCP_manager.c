@@ -16,7 +16,6 @@
 #include "IPCP_manager.h"
 #include "IPCP_api.h"
 
-#include "shim.h"
 #include "wifi_IPCP.h"
 #include "ieee802154_IPCP.h"
 
@@ -146,19 +145,6 @@ struct ipcpInstance_t *pxIpcMngrCreateShim()
     #endif */
 }
 
-/** @brief initialize the Shim IPCP task by calling the Shim_API shimInit()*/
-bool_t xIpcMngrInitShim()
-{
-    LOGI(TAG_MNGR, "Initilizating Shim IPCP");
-
-    if (xShimIpcpInit())
-    {
-        return true;
-    }
-
-    return false;
-}
-
 /** @brief create a normal instance by calling the IPCP_api IpcpCreate() */
 struct ipcpInstance_t *pxIpcMngrCreateNormal(void)
 {
@@ -192,8 +178,8 @@ bool_t xIpcMngrInitRinaStack(void)
     // add into the instance into the table
     prvIpcpMngrAddInstanceEntry(pxShimInstance);
 
-    if (!xIpcMngrInitShim())
-        return false;
+    // if (!xIpcMngrInitShim())
+    //    return false;
 
 #if SHIM_WIFI_MODULE
     if (!xShimEnrollToDIF(pxShimInstance->pxData))
@@ -211,8 +197,7 @@ bool_t xIpcMngrInitRinaStack(void)
 
     xEnrollEvent.xData.PV = (void *)(pxShimInstance);
     xSendEventStructToIPCPTask(&xEnrollEvent, 50 * 1000);
-
-#if TESTING
+#if 0
 
     /*Sending event to init validation*/
 

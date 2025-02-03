@@ -23,7 +23,7 @@ extern "C"
     bool_t xSendEventToIPCPTask(eRINAEvent_t eEvent);
 
     /* Returns true is this function is called from the IPCP-task */
-    bool_t xIsCallingFromIPCPTask(void);
+    bool_t xIsCallingFromIpcpTask(void);
 
     bool_t xSendEventStructToIPCPTask(const RINAStackEvent_t *pxEvent,
                                       useconds_t uxTimeoutUS);

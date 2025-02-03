@@ -312,7 +312,7 @@ bool_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
         memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
         xRxEvent.xData.PV = (void *)pxNetworkBuffer;
 
-        if (xSendEventStructToShimIPCPTask(&xRxEvent, 0) == false)
+        if (xSendEventStructToIPCPTask(&xRxEvent, 0) == false)
         {
             LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
             vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);

@@ -17,7 +17,6 @@ if("$ENV{TARGET_TYPE}" STREQUAL "freertos_idf")
         "ieee802154/ieee802154_IPCP_frame.c"
         "NetworkInterface/esp32/NetworkInterface.c"
         "Arp826/Arp826.c"
-        "shim.c"
         "shim_IPCP_flow.c"
 
         INCLUDE_DIRS ${Manager_INCLUDES}

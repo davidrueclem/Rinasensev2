@@ -13,9 +13,9 @@
 #include "NetworkInterface.h"
 #include "IPCP_instance.h"
 #include "IPCP_manager.h"
-#include "shim_IPCP_events.h"
+#include "IPCP_api.h"
+
 #include "shim_IPCP_flows.h"
-#include "shim.h"
 #include "wifi_IPCP.h"
 #include "wifi_IPCP_ethernet.h"
 #include "Arp826.h"
@@ -468,7 +468,7 @@ bool_t xShimSDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, struct du_
     gha_t *pxDestHw;
     size_t uxHeadLen, uxLength;
     struct timespec ts;
-    ShimTaskEvent_t xTxEvent = {
+    RINAStackEvent_t xTxEvent = {
         .eEventType = eNetworkTxEvent,
         .xData.PV = NULL};
     unsigned char *pucArpPtr;
@@ -566,7 +566,7 @@ bool_t xShimSDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, struct du_
 
     xTxEvent.xData.PV = (void *)pxNetworkBuffer;
 
-    if (xSendEventStructToShimIPCPTask(&xTxEvent, 250 * 1000) == false)
+    if (xSendEventStructToIPCPTask(&xTxEvent, 250 * 1000) == false)
     {
         LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %zu", pxNetworkBuffer, pxNetworkBuffer->xDataLength);
         vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);

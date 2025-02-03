@@ -6,17 +6,27 @@
 #include "common/rina_ids.h"
 #include "portability/port.h"
 
-#include "Shim.h"
 #include "Arp826.h"
 #include "wifi_IPCP.h"
 #include "IPCP_api.h"
 #include "IPCP_events.h"
+#include "IPCP_manager.h"
 #include "NetworkInterface.h"
 #include "configRINA.h"
 #include "configSensor.h"
 #include "BufferManagement.h"
 // #include "du.h"
 // #include "IpcManager.h"
+
+bool_t prxHandleAllocateResponse(void)
+{
+    struct ipcpInstance_t *pxShimInstance;
+    pxShimInstance = pvRsMemAlloc(sizeof(*pxShimInstance));
+
+    pxShimInstance = pxIpcManagerActiveShimInstance();
+    xShimFlowAllocateResponse(pxShimInstance->pxData, 1);
+    return true;
+}
 
 EthernetHeader_t *vCastConstPointerTo_EthernetHeader_t(const void *pvArgument)
 {

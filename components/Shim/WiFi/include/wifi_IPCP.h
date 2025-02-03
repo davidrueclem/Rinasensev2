@@ -16,7 +16,6 @@
 // #include "Arp826_defs.h"
 // #include "du.h"
 #include "common/rina_common_port.h"
-#include "shim_IPCP_events.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -18,15 +18,14 @@
 // #include "ShimIPCP.h"
 #include "configSensor.h"
 // #include "IPCP.h"
-// #include "IPCP_api.h"
+#include "IPCP_api.h"
 #include "wifi_IPCP_frames.h"
 #include "wifi_IPCP.h"
 #include "ieee802154_IPCP.h"
 #include "ieee802154_frame.h"
-#include "shim_IPCP_events.h"
-#include "shim.h"
 
 #include "IPCP_instance.h"
+#include "IPCP_events.h"
 
 #ifndef MAX
 #define MAX(a, b) ((a > b) ? a : b)
@@ -220,7 +219,7 @@ void vARPRefreshCacheEntry(gpa_t *pxGpa, gha_t *pxMACAddress)
 				 * is relaxed in this case and a return is permitted as an
 				 * optimisation. */
 				xARPCache[x].ucAge = (uint8_t)MAX_ARP_AGE; // update ARP Age
-				xARPCache[x].ucValid = (uint8_t) true;	   // update ucValid
+				xARPCache[x].ucValid = (uint8_t)true;	   // update ucValid
 				return;									   // Do not update cache entry because there is already an entry in cache.
 			}
 
@@ -288,12 +287,12 @@ void vARPRefreshCacheEntry(gpa_t *pxGpa, gha_t *pxMACAddress)
 
 		/* And this entry does not need immediate attention */
 		xARPCache[xUseEntry].ucAge = (uint8_t)MAX_ARP_AGE;
-		xARPCache[xUseEntry].ucValid = (uint8_t) true;
+		xARPCache[xUseEntry].ucValid = (uint8_t)true;
 	}
 	else if (xIpcpEntry < 0)
 	{
 		xARPCache[xUseEntry].ucAge = (uint8_t)MAX_ARP_RETRANSMISSIONS;
-		xARPCache[xUseEntry].ucValid = (uint8_t) false;
+		xARPCache[xUseEntry].ucValid = (uint8_t)false;
 	}
 	else
 	{
@@ -348,7 +347,7 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 
 		prvARPGeneratePacket(pxNetworkBuffer, pxSha, pxSpa, pxTpa, ARP_REQUEST);
 
-		if (xIsCallingFromShimIpcpTask())
+		if (xIsCallingFromIpcpTask())
 		{
 			LOGI(TAG_ARP, "Sending ARP request directly to network interface");
 
@@ -357,7 +356,7 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 		}
 		else
 		{
-			ShimTaskEvent_t xSendEvent;
+			RINAStackEvent_t xSendEvent;
 
 			LOGI(TAG_ARP, "Sending ARP request to IPCP");
 
@@ -365,7 +364,7 @@ bool_t vARPSendRequest(gpa_t *pxTpa, gpa_t *pxSpa, gha_t *pxSha)
 			xSendEvent.eEventType = eNetworkTxEvent;
 			xSendEvent.xData.PV = (void *)pxNetworkBuffer;
 
-			if (!xSendEventStructToShimIPCPTask(&xSendEvent, 1000))
+			if (!xSendEventStructToIPCPTask(&xSendEvent, 1000))
 			{
 				/* Failed to send the message, so release the network buffer. */
 				LOGE(TAG_ARP, "Se elimina?");
@@ -749,7 +748,7 @@ eARPLookupResult_t eARPLookupGPA(const gpa_t *pxGpaToLookup)
 		if (xGPACmp(xARPCache[x].pxProtocolAddress, pxGpaToLookup))
 		{
 			/* A matching valid entry was found. */
-			if (xARPCache[x].ucValid == (uint8_t) false)
+			if (xARPCache[x].ucValid == (uint8_t)false)
 			{
 				/* This entry is waiting an ARP reply, so is not valid. */
 				eReturn = eCantSendPacket;

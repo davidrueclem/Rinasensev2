@@ -25,9 +25,8 @@
 #include "wifi_IPCP.h" //temporal
 #include "wifi_IPCP_ethernet.h"
 #include "wifi_IPCP_frames.h"
+#include "IPCP_api.h"
 
-#include "shim.h"
-#include "shim_IPCP_events.h"
 /* ESP includes.*/
 
 #include <esp_wifi.h>
@@ -307,7 +306,7 @@ esp_err_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 	const TickType_t xDescriptorWaitTime = pdMS_TO_TICKS(0);
 	struct timespec ts;
 
-	ShimTaskEvent_t xRxEvent = {
+	RINAStackEvent_t xRxEvent = {
 		.eEventType = eNetworkRxEvent,
 		.xData.PV = NULL};
 
@@ -337,7 +336,7 @@ esp_err_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 
 		// LOGE(TAG_RINA, "pucEthernetBuffer and len: %p, %d", pxNetworkBuffer->pucEthernetBuffer, len);
 
-		if (xSendEventStructToShimIPCPTask(&xRxEvent, xDescriptorWaitTime) == pdFAIL)
+		if (xSendEventStructToIPCPTask(&xRxEvent, xDescriptorWaitTime) == pdFAIL)
 		{
 			LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
 			vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
@@ -358,14 +357,14 @@ esp_err_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 
 void vNetworkNotifyIFDown()
 {
-	ShimTaskEvent_t xRxEvent = {
+	RINAStackEvent_t xRxEvent = {
 		.eEventType = eNetworkDownEvent,
 		.xData.PV = NULL};
 
 	if (xInterfaceState != INTERFACE_DOWN)
 	{
 		xInterfaceState = INTERFACE_DOWN;
-		xSendEventStructToShimIPCPTask(&xRxEvent, 0);
+		xSendEventStructToIPCPTask(&xRxEvent, 0);
 	}
 }
 

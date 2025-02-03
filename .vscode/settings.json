@@ -9,7 +9,9 @@
         "shim_ipcp_flows.h": "c",
         "buffermanagement.h": "c",
         "rina_common_port.h": "c",
-        "list.h": "c"
+        "list.h": "c",
+        "pthread.h": "c",
+        "wifi_ipcp.h": "c"
     },
-    "idf.portWin": "COM10"
+    "idf.portWin": "COM3"
 }
