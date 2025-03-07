@@ -30,7 +30,7 @@
 #define SHIM_BLE_MODULE (0)
 
 /********** Define 802.15.4 Parameters **********/
-#define TAG_802154 "[NetInterface]"
+#define TAG_802154 "[NetInterface_802154]"
 #define TAG_SHIM_802154 "[SHIM_802154]"
 
 /*********  Define WiFi Parameters *************/

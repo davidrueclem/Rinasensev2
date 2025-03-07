@@ -55,6 +55,7 @@ extern "C"
 	struct ipcpInstance_t *pxIpcManagerActiveShimInstance(void);
 
 	void xTestEnroll(struct ipcpInstance_t *pxIpcpShimWiFi);
+	struct ipcpInstance_t *pxIpcManagerFindInstanceByType(ipcpInstanceType_t xType);
 
 #ifdef __cplusplus
 }

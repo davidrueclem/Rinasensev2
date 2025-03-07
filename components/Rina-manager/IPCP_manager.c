@@ -73,7 +73,7 @@ struct ipcpInstance_t *pxIpcManagerFindInstanceById(ipcpInstanceId_t xIpcpId)
  * @return ipcpInstance_t* pointer to the ipcp instance.
  */
 
-static struct ipcpInstance_t *pxIpcManagerFindInstanceByType(ipcpInstanceType_t xType)
+struct ipcpInstance_t *pxIpcManagerFindInstanceByType(ipcpInstanceType_t xType)
 {
     num_t x = 0;
 
@@ -135,14 +135,12 @@ struct ipcpInstance_t *pxIpcMngrCreateShim()
 
     // add the shimInstance into the instance list.
 
-#ifdef SHIM_WIFI_MODULE
+/*#ifdef SHIM_WIFI_MODULE
     return pxShimWiFiCreate(xIpcpId);
-#endif
-    /*FIX ME*/
-    /*
+#endif*/
     #ifdef SHIM_802154_MODULE
         return pxShim802154Create(xIpcpId);
-    #endif */
+    #endif 
 }
 
 /** @brief create a normal instance by calling the IPCP_api IpcpCreate() */
