@@ -23,11 +23,11 @@ extern "C"
     bool_t xIeee802154NetworkInterfaceDisconnect(void);
     bool_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb);
 
-    /* The following function is defined only when BufferAllocation_1.c is linked in the project. */
+    
+    /* The following functionS are defined only when BufferAllocation_1.c is linked in the project. 
     void vIeee802154NetworkInterfaceAllocateRAMToBuffers(NetworkBufferDescriptor_t pxNetworkBuffers[NUM_NETWORK_BUFFER_DESCRIPTORS]);
-
-    /* The following function is defined only when BufferAllocation_1.c is linked in the project. */
     bool_t xIeee802154GetPhyLinkStatus(void);
+    */
 
 #ifdef __cplusplus
 }
