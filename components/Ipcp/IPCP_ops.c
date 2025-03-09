@@ -825,7 +825,7 @@ static struct ipcpInstanceOps_t xNormalInstanceOps = {
     .connectionCreateArrived = NULL,                    // ok
     .connectionModify = NULL,                           // ok
 
-    .duEnqueue = NULL, // ok
+    .duEnqueue = xNormalDuEnqueue, // ok
     .duWrite = NULL,   // ok
 
     .mgmtDuWrite = NULL, // ok

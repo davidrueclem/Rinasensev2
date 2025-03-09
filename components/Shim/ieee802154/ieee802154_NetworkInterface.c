@@ -35,6 +35,7 @@
 #include "configSensor.h"
 #include "common/mac.h"
 
+#include "IPCP_manager.h"
 #include "ieee802154_frame.h"
 
 #include "common/rina_common.h"
@@ -60,23 +61,20 @@ enum if_state_t
 
 /* Variable State of Interface */
 volatile static uint32_t xInterfaceState = DOWN;
-static QueueHandle_t rx_queue = NULL;
 
-/* Forward declarations */
-static void handler_task(void *pvParameters);
-
-static void handler_task(void *pvParameters)
+void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
 {
-    uint8_t packet[257];
-    while (xQueueReceive(rx_queue, &packet, portMAX_DELAY) != false)
+    if (!buffer || buffer[0] == 0)
     {
-        LOGI(TAG_802154, "Processing received packet of length: %d", packet[0]);
-        xIeee802154NetworkInterfaceInput(&packet[1], packet[0], NULL);
+        LOGE(TAG_802154, "Received invalid packet");
+        return;
     }
 
-    ESP_LOGE(TAG_802154, "Handler task terminated");
-    vTaskDelete(NULL);
+    LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
+
+    xIeee802154NetworkInterfaceInput(&buffer[1], buffer[0], NULL);
 }
+
 
 bool_t xIeee802154NetworkInterfaceInitialise(MACAddress_t *pxPhyDev)
 {
@@ -134,33 +132,21 @@ bool_t xIeee802154NetworkInterfaceDisconnect(void)
     return true;
 }
 
-void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
-{
-    BaseType_t task;
-    if (xQueueSendToBackFromISR(rx_queue, buffer, &task) != pdTRUE)
-    {
-        ESP_LOGE(TAG_802154, "Failed to enqueue received packet");
-    }
-}
 
 esp_err_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 {
     NetworkBufferDescriptor_t *pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(len, 0);
-
-    if (pxNetworkBuffer != NULL)
-    {
-        memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
-        pxNetworkBuffer->xDataLength = len;
-
-        vHandleIEEE802154Frame(pxNetworkBuffer);
-		vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
-        return ESP_OK;
-    }
-    else
+    if (!pxNetworkBuffer)
     {
         LOGE(TAG_802154, "Failed to allocate network buffer");
+        vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
         return ESP_FAIL;
     }
+
+    memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
+    pxNetworkBuffer->xEthernetDataLength = len;
+
+    return xProcessIEEE802154Packet(pxNetworkBuffer);
 }
 
 bool_t xIeee802154NetworkInterfaceOutput(NetworkBufferDescriptor_t *const pxNetworkBuffer, bool_t xReleaseAfterSend)
