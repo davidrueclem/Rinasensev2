@@ -81,7 +81,7 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
 
 
     dstAddr.mode = ADDR_MODE_SHORT;
-    dstAddr.short_address = SHORT_BROADCAST;  // Hardcoded Short Address
+    dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION;  // Hardcoded Short Address
 
     LOGI(TAG_SHIM_802154, "Building IEEE 802.15.4 Header");
 
