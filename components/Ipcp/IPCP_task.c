@@ -26,12 +26,16 @@
 #include "IPCP_normal_defs.h"
 #include "IPCP_normal_api.h"
 
+
 #include "efcp.h"
 #include "enrollment_api.h"
 #include "du.h"
 #include "flowAllocator_api.h"
+#include "ieee802154_NetworkInterface.h"
 
 #include "rina_api.h"
+
+
 
 bool_t xSendEventToIPCPTask(eRINAEvent_t eEvent);
 
@@ -267,6 +271,26 @@ static void *prvIpcpTask(void *pvParameters)
 
         switch (xReceivedEvent.eEventType)
         {
+            case eNetworkRxEvent:
+            /* The network hardware driver has received a new packet.  A
+             * pointer to the received buffer is located in the pvData member
+             * of the received event structure. */
+            
+            //vIpcManagerRINAPackettHandler
+            break;
+
+        case eNetworkTxEvent:
+        {
+            NetworkBufferDescriptor_t *pxDescriptor;
+
+            pxDescriptor = (NetworkBufferDescriptor_t *)xReceivedEvent.xData.PV;
+
+            /* Send a network packet. The ownership will  be transferred to
+             * the driver, which will release it after delivery. */
+            //xNetworkInterfaceOutput(pxDescriptor, true);
+            xIeee802154NetworkInterfaceOutput(pxDescriptor, true);
+        }
+        break;
         case eShimEnrolledEvent:
             /* The IPCP manager sends this event after it receives the notification of the Shim was enrolled.
              * The IPCP manager must send the SHIM instance pòinter to register. Then, the Normal IPCP registers in the shim IPCP.

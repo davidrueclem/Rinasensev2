@@ -3,21 +3,22 @@
 
 #define TESTING (0)
 /**************SHIM 802154 CONFIGURATION ***********/
-#define SHIM_802154_MODULE (0)
+#define SHIM_802154_MODULE (1)
 
-#define SHIM_INTERFACE_802154 "Nodo2" //"Coordinator"
+#define SHIM_INTERFACE_802154 "Reciever" //"Coordinator"
 
-#define ieee802154_COORDINATOR (1) // Zero if coordinator
+#define ieee802154_COORDINATOR (0) // Zero if coordinator
 #define ieee802154_PANID_SOURCE 0x4242
 #define ieee802154_PANID_DESTINATION 0x4242
 #define ieee802154_CHANNEL 20
-#define ieee802154_SHORT_ADDRESS 0x0002 // 0x0002
+#define ieee802154_SHORT_ADDRESS 0x0001 // 0x0002
+#define ieee802154_SHORT_ADDRESS_DESTINATION 0x002
 #define PAN_BROADCAST 0xFFFF
 #define SHORT_BROADCAST 0xFFFF
 #define ieee802154_MTU (256)
 
 /************* SHIM WIFI CONFIGURATION ***********/
-#define SHIM_WIFI_MODULE (1) // Zero if not shim WiFi modules is required.
+#define SHIM_WIFI_MODULE (0) // Zero if not shim WiFi modules is required.
 
 #define SHIM_PROCESS_NAME "wlan0.ue"
 #define SHIM_PROCESS_INSTANCE "1"
@@ -36,22 +37,22 @@
 
 /*********** NORMAL CONFIGURATION ****************/
 
-#define NORMAL_PROCESS_NAME "ue1.mobile" //"st4.slice1"
+#define NORMAL_PROCESS_NAME "st1.slice1" //"st4.slice1"
 #define NORMAL_PROCESS_INSTANCE "1"
 #define NORMAL_ENTITY_NAME ""
 #define NORMAL_ENTITY_INSTANCE ""
 
-#define NORMAL_DIF_NAME "mobile.DIF" //"slice1.DIF" //
+#define NORMAL_DIF_NAME "slice1.DIF" //"slice1.DIF" //
 
 /*********** NORMAL IPCP CONFIGURATION ****************/
 /**** Known IPCProcess Address *****/
 #define LOCAL_ADDRESS (1) // 1
 #define LOCAL_ADDRESS_AP_INSTANCE "1"
-#define LOCAL_ADDRESS_AP_NAME "ue1.mobile" //"st4.slice1"
+#define LOCAL_ADDRESS_AP_NAME "st1.slice1" //"st4.slice1"
 
 #define REMOTE_ADDRESS (3) // 3
 #define REMOTE_ADDRESS_AP_INSTANCE "1"
-#define REMOTE_ADDRESS_AP_NAME "ar1.mobile" // "gw1.slice1" // ar1.mobile
+#define REMOTE_ADDRESS_AP_NAME "st2.slice1" // "gw1.slice1" // ar1.mobile
 
 /**** QoS CUBES ****/
 #define QoS_CUBE_NAME "unreliable"

@@ -3,10 +3,7 @@
 
 #include "common/rina_ids.h"
 #include "common/rina_gpha.h"
-
-// #include "Arp826.h"
-// #include "Arp826_defs.h"
-// #include "du.h"
+#include <stdint.h>
 #include "common/rina_common_port.h"
 
 #ifdef __cplusplus
@@ -17,6 +14,11 @@ extern "C"
 #define FRAME_VERSION_STD_2003 0
 #define FRAME_VERSION_STD_2006 1
 #define FRAME_VERSION_STD_2015 2
+
+#define ADDR_MODE_NONE     (0)  // PAN ID and address fields are not present
+#define ADDR_MODE_RESERVED (1)  // Reseved
+#define ADDR_MODE_SHORT    (2)  // Short address (16-bit)
+#define ADDR_MODE_LONG     (3)  // Extended address (64-bit)
 
 #define FRAME_TYPE_BEACON (0)
 #define FRAME_TYPE_DATA (1)
@@ -67,6 +69,10 @@ extern "C"
         uint8_t srcAddrType : 2;
     } mac_fcs_t;
 
+
+    uint8_t ieee802154_header(const uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
+                          ieee802154_address_t *dst, uint8_t ack, uint8_t *header, uint8_t header_length);
+    
     typedef enum IEEE802154_FRAMES_PROCESSING
     {
         eIeee802154ReleaseBuffer = 0,   /* Processing the frame did not find anything to do - just release the buffer. */
@@ -74,10 +80,9 @@ extern "C"
         eIeee802154ReturnEthernetFrame, /* The Ethernet frame contains an ARP826 packet that can be returned to its source. */
         eIeee802154FrameConsumed        /* Processing the Ethernet packet contents resulted in the payload being sent to the stack. */
     } eFrameResult_t;
-
-    void vFrameForProcessing(uint8_t *pucBuffer, uint8_t ucLen);
-    void vIeee802154_Broadcast(uint16_t pan_id);
-    void vIeee802154FrameBroadcast(NetworkBufferDescriptor_t *pxNetworkBuffer, gha_t *pxSha, gha_t *pxTha, uint8_t pcFrameType);
+    void vHandleIEEE802154Frame(NetworkBufferDescriptor_t *pxNetworkBuffer);
+    void vIeee802154FrameSend(uint8_t *pucBuffer, uint16_t usLength);
+    esp_err_t xProcessIEEE802154Packet(NetworkBufferDescriptor_t *pxNetworkBuffer);
 
     ieee802154_address_t *vCastPointerTo_Ieee802154Header_t(void *pvArgument);
 #ifdef __cplusplus
