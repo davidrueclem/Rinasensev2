@@ -48,6 +48,8 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
 
     size_t uxLength = pxDu->pxNetworkBuffer->xDataLength;
 
+    LOGI(TAG_SHIM_802154, "SDU Length before header: %zu bytes", uxLength);
+
     if (uxLength > ieee802154_MTU)
     {
         LOGE(TAG_SHIM_802154, "SDU too large (%zu), dropping", uxLength);
@@ -75,10 +77,8 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
     uint16_t pan_id = ieee802154_PANID_SOURCE;
     esp_ieee802154_set_panid(pan_id);
 
-
     srcAddr.mode = ADDR_MODE_LONG;
     esp_ieee802154_get_extended_address(srcAddr.long_address); 
-
 
     dstAddr.mode = ADDR_MODE_SHORT;
     dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION;  // Hardcoded Short Address
@@ -86,6 +86,16 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
     LOGI(TAG_SHIM_802154, "Building IEEE 802.15.4 Header");
 
     hdrLen = ieee802154_header(&pan_id, &srcAddr, &pan_id, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
+
+    if (hdrLen == 0 || hdrLen + uxLength > ieee802154_MTU)
+    {
+        LOGE(TAG_SHIM_802154, "Invalid header length (%u), dropping packet", hdrLen);
+        xDuDestroy(pxDu);
+        return false;
+    }
+
+    LOGI(TAG_SHIM_802154, "Header Length: %u bytes", hdrLen);
+    LOGI(TAG_SHIM_802154, "Total Packet Length (Header + SDU): %u bytes", hdrLen + (uint8_t)uxLength);
 
     LOGI(TAG_SHIM_802154, "Allocating network buffer with header and payload");
 
@@ -119,7 +129,6 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
 
     return true;
 }
-
 
 
 /** @brief Enrollment operation must be called by the IPCP manager after initializing
@@ -235,7 +244,7 @@ bool_t xShim802154ApplicationRegister(struct ipcpInstanceData_t *pxData, name_t 
 
     if (!pxData->pxDafName)
     {
-        //LOGE(TAG_SHIM_802154, "Removing ARP Entry for DAF");
+        LOGE(TAG_SHIM_802154, "Removing ARP Entry for DAF");
         //xARPRemove(pxData->pxAppHandle->pxPa, pxData->pxAppHandle->pxHa);
         pxData->pxAppHandle = NULL;
         vRstrNameFree(pxData->pxAppName);
@@ -260,7 +269,7 @@ bool_t xShim802154ApplicationRegister(struct ipcpInstanceData_t *pxData, name_t 
 
     if (!pxData->pxDafHandle)
     {
-        //LOGE(TAG_SHIM_802154, "Failed to register DAF in ARP");
+        LOGE(TAG_SHIM_802154, "Failed to register DAF in ARP");
         //xARPRemove(pxData->pxAppHandle->pxPa, pxData->pxAppHandle->pxHa);
         pxData->pxAppHandle = NULL;
         vRstrNameFree(pxData->pxAppName);
@@ -271,6 +280,90 @@ bool_t xShim802154ApplicationRegister(struct ipcpInstanceData_t *pxData, name_t 
     }
 
     //vARPPrintCache();
+
+    return true;
+}
+
+/**
+ * @brief Response to Flow allocation request.
+ *
+ * @param pxShimInstanceData
+ * @param pxUserIpcp
+ * @param xPortId
+ * @return bool_t
+ */
+bool_t xShimFlowAllocateResponse(struct ipcpInstanceData_t *pxShimInstanceData,
+    portId_t xPortId)
+
+{
+
+    shimFlow_t *pxFlow;
+    struct ipcpInstance_t *pxIpcp, *pxUserIpcp;
+
+    LOGI(TAG_SHIM, "Generating a Flow Allocate Response for a pending request");
+
+    pxIpcp = pxIpcManagerActiveShimInstance();
+
+    if (!pxShimInstanceData)
+    {
+    LOGE(TAG_SHIM, "Bogus data passed, bailing out");
+    return false;
+    }
+
+    if (!is_port_id_ok(xPortId))
+    {
+    LOGE(TAG_SHIM, "Invalid port ID passed, bailing out");
+    return false;
+    }
+
+    if (!pxIpcp)
+    {
+    LOGE(TAG_SHIM, "Not Shim Ipcp Instance found it");
+    return false;
+    }
+
+    /* Searching for the Flow registered into the shim Instance Flow list */
+    // Should include the portId into the search.
+    pxFlow = prvShimFindFlowByPortId(pxShimInstanceData, xPortId);
+    if (!pxFlow)
+    {
+    LOGE(TAG_SHIM, "Flow does not exist, you shouldn't call this");
+    return false;
+    }
+
+    /* Check if the flow is already allocated*/
+    if (pxFlow->ePortIdState != ePENDING)
+    {
+    LOGE(TAG_SHIM, "Flow is already allocated");
+    return false;
+    }
+
+    /* On positive response, flow should transition to allocated state */
+
+    /*Retrieving the User IPCP Instance */
+    pxUserIpcp = pxFlow->pxUserIpcp;
+
+    /*Call to IPCP User to flow binding*/
+    configASSERT(pxUserIpcp->pxOps);
+    RsAssert(pxUserIpcp->pxOps->flowBindingIpcp);
+
+    if (!pxUserIpcp->pxOps->flowBindingIpcp(pxUserIpcp->pxData,
+                xPortId,
+                pxIpcp)) // It is passing the Normal Ipcp Instance.
+    {
+    LOGE(TAG_SHIM, "Could not bind flow with user_ipcp");
+    return pdFALSE;
+    }
+
+    pxFlow->ePortIdState = eALLOCATED;
+    pxFlow->xPortId = xPortId;
+
+    pxFlow->pxDestHa = pxARPLookupGHA(pxFlow->pxDestPa);
+
+    if (pxFlow->ePortIdState == eALLOCATED)
+    {
+    /*Send a Messages or notify to the Flow Allocator*/
+    }
 
     return true;
 }
@@ -382,7 +475,7 @@ bool_t xShim802154FlowAllocateRequest(struct ipcpInstanceData_t *pxData, struct 
 /* Structure to define the IPCP instance Operations */
 static struct ipcpInstanceOps_t xShimIeee802154Ops = {
     .flowAllocateRequest = xShim802154FlowAllocateRequest, // ok
-    .flowAllocateResponse = NULL,                          // xShimFlowAllocateResponse, // ok
+    .flowAllocateResponse = xShimFlowAllocateResponse,                          // xShimFlowAllocateResponse, // ok
     .flowDeallocate = NULL,                                // xShimFlowDeallocate,             // ok
     .flowPrebind = NULL,                                   // ok
     .flowBindingIpcp = NULL,                               // ok

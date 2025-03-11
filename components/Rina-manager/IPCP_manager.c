@@ -97,7 +97,10 @@ struct ipcpInstance_t *pxIpcManagerActiveNormalInstance(void)
 }
 
 struct ipcpInstance_t *pxIpcManagerActiveShimInstance(void)
-{
+{   
+    #if SHIM_802154_MODULE
+    return pxIpcManagerFindInstanceByType(eShim802154);
+    #endif
     return pxIpcManagerFindInstanceByType(eShimWiFi);
 }
 
