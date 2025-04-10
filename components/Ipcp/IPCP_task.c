@@ -311,6 +311,10 @@ static void *prvIpcpTask(void *pvParameters)
             (void)prvIpcpFlowRequest(pxShimInstance, xN1PortId, pxIpcpData->pxName);
             // vIPCPTimerStart(&xN1FlowAllocatedTimer, 10000);
 
+            #if SHIM_802154_MODULE
+            pxShimInstance->pxOps->flowAllocateResponse(pxShimInstance->pxData,xN1PortId);
+            (void) vEnrollmentInit(pxIpcpData, xN1PortId);
+            #endif
             break;
 
         case eShimFlowAllocatedEvent:

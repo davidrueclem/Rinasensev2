@@ -219,6 +219,7 @@ void vIeee802154FrameSend(uint8_t *pucBuffer, uint16_t usLength)
     }
 
     LOGI(TAG_802154, "Transmitting IEEE 802.15.4 frame");
+    LOGI(TAG_802154, "Frame length: %u", usLength); 
 
     if (esp_ieee802154_transmit(pucBuffer, false) == ESP_OK)
     {
