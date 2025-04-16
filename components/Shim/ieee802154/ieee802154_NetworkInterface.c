@@ -45,6 +45,9 @@
 #if ESP_IDF_VERSION_MAJOR > 4
 #include "esp_mac.h"
 #endif
+
+#include "IPCP_api.h"
+#include "IPCP_events.h"
 #include "esp_event.h"
 #include "esp_system.h"
 #include "esp_event_base.h"
@@ -61,16 +64,15 @@ enum if_state_t
 
 /* Variable State of Interface */
 volatile static uint32_t xInterfaceState = DOWN;
-
 void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
 {
+    ESP_EARLY_LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
+
+    // LOGI(TAG_802154, "Sending to NI input, buffer=%p len=%d", &buffer[1], buffer[0]);
     if (!buffer || buffer[0] == 0)
     {
-        LOGE(TAG_802154, "Received invalid packet");
-        return;
+        ESP_EARLY_LOGI(TAG_802154, "Received invalid packet");
     }
-
-    LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
 
     xIeee802154NetworkInterfaceInput(&buffer[1], buffer[0], NULL);
 }
@@ -133,21 +135,37 @@ bool_t xIeee802154NetworkInterfaceDisconnect(void)
 }
 
 
-esp_err_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
+void xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
+
 {
+    RINAStackEvent_t xRxEvent = {
+		.eEventType = eNetworkRxEvent,
+		.xData.PV = NULL};
+
     NetworkBufferDescriptor_t *pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(len, 0);
+    const TickType_t xDescriptorWaitTime = pdMS_TO_TICKS(0);
     if (!pxNetworkBuffer)
     {
         LOGE(TAG_802154, "Failed to allocate network buffer");
         vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
-        return ESP_FAIL;
+        
     }
 
     memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
-    pxNetworkBuffer->xEthernetDataLength = len;
 
-    return xProcessIEEE802154Packet(pxNetworkBuffer);
+    pxNetworkBuffer->xEthernetDataLength = len;
+    xRxEvent.xData.PV = (void *)pxNetworkBuffer;
+
+	// LOGE(TAG_RINA, "pucEthernetBuffer and len: %p, %d", pxNetworkBuffer->pucEthernetBuffer, len);
+
+    if (xSendEventStructToIPCPTask(&xRxEvent, xDescriptorWaitTime) == pdFAIL)
+    {
+        LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
+        vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
+        
+    }
 }
+       
 
 bool_t xIeee802154NetworkInterfaceOutput(NetworkBufferDescriptor_t *const pxNetworkBuffer, bool_t xReleaseAfterSend)
 {
