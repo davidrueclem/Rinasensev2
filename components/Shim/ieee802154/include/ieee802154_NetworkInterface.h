@@ -21,7 +21,7 @@ extern "C"
 
     bool_t xIeee802154NetworkInterfaceConnect(void);
     bool_t xIeee802154NetworkInterfaceDisconnect(void);
-    bool_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb);
+    void xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb);
 
     void xIeee802154NetworkInterfaceAssociation_Response(uint8_t *buffer);
 

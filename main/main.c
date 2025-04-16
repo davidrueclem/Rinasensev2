@@ -23,6 +23,7 @@ void app_main(void)
 
     RINA_init();
 
+    // All done, the rest is up to handlers
     while (true)
     {
         vTaskDelay(10 / portTICK_PERIOD_MS);

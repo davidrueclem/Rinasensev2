@@ -31,6 +31,9 @@
 #if ESP_IDF_VERSION_MAJOR > 4
 #include "esp_mac.h"
 #endif
+
+#include "IPCP_api.h"
+#include "IPCP_events.h"
 #include "esp_event.h"
 #include "esp_system.h"
 #include "esp_event_base.h"
@@ -86,14 +89,14 @@ static void request_event_handler(void *arg, esp_event_base_t event_base, int32_
 
 /* Variable State of Interface */
 volatile static uint32_t xInterfaceState = DOWN;
-
 void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
 {
-    LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
+    ESP_EARLY_LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
 
+    // LOGI(TAG_802154, "Sending to NI input, buffer=%p len=%d", &buffer[1], buffer[0]);
     if (!buffer || buffer[0] == 0)
     {
-        LOGE(TAG_802154, "Received invalid packet");
+        ESP_EARLY_LOGI(TAG_802154, "Received invalid packet");
     }
 
     xIeee802154NetworkInterfaceInput(&buffer[1], buffer[0], NULL);
@@ -314,27 +317,14 @@ bool_t xIeee802154NetworkInterfaceDisconnect(void)
 
 esp_err_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 {
-
-    assert(len < 128); // o tu MTU
-    // LOGI("802154_DRIVER", "Calling xIeee802154NetworkInterfaceInput, buffer=%p, len=%d", buffer, len);
-    // LOGE(TAG_802154, "Packet too large (%d bytes)", len);
-
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
     NetworkBufferDescriptor_t *pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(len, 0);
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
-
-    assert(pxNetworkBuffer->pucEthernetBuffer != NULL);
-    assert(len < 1500); // o tu MTU
-
+    const TickType_t xDescriptorWaitTime = pdMS_TO_TICKS(0);
     if (!pxNetworkBuffer)
     {
         heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
 
         LOGE(TAG_802154, "Failed to allocate network buffer");
-
-        // vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
-        heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
-
+        vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
         return ESP_FAIL;
     }
 
@@ -342,8 +332,8 @@ esp_err_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
     heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
     // LOGE(TAG_802154, "Packet too large (%d bytes)", len);
     memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
+
     pxNetworkBuffer->xEthernetDataLength = len;
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
 
     return xProcessIEEE802154Packet(pxNetworkBuffer);
 }

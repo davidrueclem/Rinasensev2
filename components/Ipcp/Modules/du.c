@@ -119,7 +119,11 @@ bool_t xDuEncap(struct du_t *pxDu, pduType_t xType)
 	size_t xBufferSize;
 	pci_t *pxPciTmp;
 
-	uxPciLen = (size_t)(14); /* PCI defined static for this initial stage = 14Bytes*/
+	#ifdef SHIM_802154_MODULE
+	uxPciLen = (size_t)(12); /* PCI length reduced for IEEE 802.15.4 */
+	#else
+	uxPciLen = (size_t)(14); /* Default PCI length */
+	#endif
 
 	/* New Size = Data Size more the PCI size defined by default. */
 	xBufferSize = pxDu->pxNetworkBuffer->xDataLength + uxPciLen;

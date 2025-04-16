@@ -77,29 +77,7 @@ extern "C"
         uint8_t srcAddrType : 2;
     } mac_fcs_t;
 
-    typedef enum
-    {
-        FRAME_TYPE_ASSOC_REQ = 0x01,
-        FRAME_TYPE_ASSOC_RESP = 0x02,
-        FRAME_TYPE_DATA = 0x03
-    } custom_frame_type_t;
-
-    typedef struct
-    {
-        uint8_t frame_type;
-        // uint8_t device_capabilities;
-        // uint64_t mac_address; // Si usas dirección extendida
-        // Otros campos si quieres
-    } __attribute__((packed)) association_request_t;
-
-    typedef struct
-    {
-        uint8_t frame_type;
-        // uint16_t short_address;
-        uint8_t status; // accepted or rejected
-    } __attribute__((packed)) association_response_t;
-
-    uint8_t ieee802154_header(ieee802154_frame_type_t frame_type, uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
+    uint8_t ieee802154_header(const uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
                               ieee802154_address_t *dst, uint8_t ack, uint8_t *header, uint8_t header_length);
 
     typedef enum IEEE802154_FRAMES_PROCESSING
