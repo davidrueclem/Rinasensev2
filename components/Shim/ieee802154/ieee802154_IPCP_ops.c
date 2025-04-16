@@ -77,23 +77,24 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
     uint16_t pan_id = ieee802154_PANID_SOURCE;
     esp_ieee802154_set_panid(pan_id);
 
-    srcAddr.mode = ADDR_MODE_LONG;
-    esp_ieee802154_get_extended_address(srcAddr.long_address); 
-
+    srcAddr.mode = ADDR_MODE_SHORT;
+    srcAddr.short_address = ieee802154_SHORT_ADDRESS;  
+    
     dstAddr.mode = ADDR_MODE_SHORT;
-    dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION;  // Hardcoded Short Address
+    dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION;
 
     LOGI(TAG_SHIM_802154, "Building IEEE 802.15.4 Header");
 
-    hdrLen = ieee802154_header(&pan_id, &srcAddr, &pan_id, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
+    hdrLen = ieee802154_header(&pan_id, &srcAddr, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
 
-    if (hdrLen == 0 || hdrLen + uxLength > ieee802154_MTU)
+
+    /*if (hdrLen == 0 || hdrLen + uxLength > ieee802154_MTU)
     {
         LOGE(TAG_SHIM_802154, "Invalid header length (%u), dropping packet", hdrLen);
         xDuDestroy(pxDu);
         return false;
     }
-
+    */
     LOGI(TAG_SHIM_802154, "Header Length: %u bytes", hdrLen);
     LOGI(TAG_SHIM_802154, "Total Packet Length (Header + SDU): %u bytes", hdrLen + (uint8_t)uxLength);
 
@@ -116,7 +117,6 @@ bool_t xShimIEEE802154SDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, 
     xDuDestroy(pxDu);
 
     xTxEvent.xData.PV = (void *)pxNetworkBuffer;
-
     if (xSendEventStructToIPCPTask(&xTxEvent, 250 * 1000) == false)
     {
         LOGE(TAG_SHIM_802154, "Failed to enqueue packet to network stack %p, len %zu",
@@ -267,17 +267,6 @@ bool_t xShim802154ApplicationRegister(struct ipcpInstanceData_t *pxData, name_t 
 
     //pxData->pxDafHandle = pxARPAdd(pxPa, pxHa);
 
-    if (!pxData->pxDafHandle)
-    {
-        LOGE(TAG_SHIM_802154, "Failed to register DAF in ARP");
-        //xARPRemove(pxData->pxAppHandle->pxPa, pxData->pxAppHandle->pxHa);
-        pxData->pxAppHandle = NULL;
-        vRstrNameFree(pxData->pxAppName);
-        vRstrNameFree(pxData->pxDafName);
-        vGPADestroy(pxPa);
-        vGHADestroy(pxHa);
-        return false;
-    }
 
     //vARPPrintCache();
 
@@ -358,7 +347,7 @@ bool_t xShimFlowAllocateResponse(struct ipcpInstanceData_t *pxShimInstanceData,
     pxFlow->ePortIdState = eALLOCATED;
     pxFlow->xPortId = xPortId;
 
-    pxFlow->pxDestHa = pxARPLookupGHA(pxFlow->pxDestPa);
+    //pxFlow->pxDestHa = pxARPLookupGHA(pxFlow->pxDestPa);
 
     if (pxFlow->ePortIdState == eALLOCATED)
     {
