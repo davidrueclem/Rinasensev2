@@ -48,19 +48,17 @@ void vHandleIEEE802154Frame(NetworkBufferDescriptor_t *pxNetworkBuffer)
     if (pxNetworkBuffer == NULL || pxNetworkBuffer->pucEthernetBuffer == NULL)
     {
         LOGE(TAG_802154, "Invalid network buffer");
-        return;
     }
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
 
     uint8_t *pucBuffer = pxNetworkBuffer->pucEthernetBuffer;
     uint16_t usLength = pxNetworkBuffer->xDataLength;
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
     LOGI(TAG_802154, "Received packet of length %d", usLength);
     debug_print_packet(pucBuffer, usLength);
-    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
     mac_fcs_t *pxFrameHeader = (mac_fcs_t *)pucBuffer;
     // if FRAME_TYPE_MAC_COMMAND then router envia comando 03 con un valor(1 rquest/2 response) router procesa la asosiacion
-    if (pxFrameHeader->frameType == FRAME_TYPE_DATA)
+    if (pxFrameHeader->frameType == eFRAME_TYPE_DATA)
     {
         LOGI(TAG_802154, "Processing DATA frame");
     }
@@ -112,7 +110,7 @@ esp_err_t xProcessIEEE802154Packet(NetworkBufferDescriptor_t *pxNetworkBuffer)
             dstAddr.mode = ADDR_MODE_SHORT;
             dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION; // Hardcoded Short Address
 
-            hdrLen = ieee802154_header(eFRAME_TYPE_DATA, &pan_id, &srcAddr, &pan_id, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
+            hdrLen = ieee802154_header(&pan_id, &srcAddr, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
 
             association_response[0] = 0x02;
 
@@ -329,8 +327,6 @@ static void debug_print_packet(uint8_t *packet, uint8_t packet_length)
     }
 }
 
-static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n);
-
 uint8_t ieee802154_header(const uint16_t *pan_id, ieee802154_address_t *src, ieee802154_address_t *dst,
                           uint8_t ack, uint8_t *header, uint8_t header_length)
 {
@@ -340,7 +336,7 @@ uint8_t ieee802154_header(const uint16_t *pan_id, ieee802154_address_t *src, iee
     }
 
     mac_fcs_t frame_header = {
-        .frameType = FRAME_TYPE_DATA,
+        .frameType = eFRAME_TYPE_DATA,
         .secure = false,
         .framePending = false,
         .ackReqd = ack,
@@ -376,6 +372,7 @@ uint8_t ieee802154_header(const uint16_t *pan_id, ieee802154_address_t *src, iee
     return position;
 }
 
+static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n);
 static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n)
 {
     size_t i;
