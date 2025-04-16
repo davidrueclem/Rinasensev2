@@ -26,7 +26,6 @@
 #include "IPCP_normal_defs.h"
 #include "IPCP_normal_api.h"
 
-
 #include "efcp.h"
 #include "enrollment_api.h"
 #include "du.h"
@@ -34,8 +33,6 @@
 #include "ieee802154_NetworkInterface.h"
 
 #include "rina_api.h"
-
-
 
 bool_t xSendEventToIPCPTask(eRINAEvent_t eEvent);
 
@@ -214,6 +211,14 @@ bool_t xSendEventToIPCPTask(eRINAEvent_t eEvent)
     return xSendEventStructToIPCPTask(&xEventMessage, 0);
 }
 
+static const char *TAG = "STACK_MONITOR";
+
+void monitor_stack_usage(TaskHandle_t task_handle, const char *task_name)
+{
+    UBaseType_t free_stack = uxTaskGetStackHighWaterMark(task_handle);
+    LOGI(TAG, "Task: %s, Free Stack: %u bytes", task_name, free_stack * IPCP_TASK_STACK_SIZE);
+}
+
 /***
  *  Create the IPCP Task
  * */
@@ -251,6 +256,7 @@ static void *prvIpcpTask(void *pvParameters)
     for (;;)
     {
         LOGI(TAG_IPCPMANAGER, "NORMAL TASK");
+        monitor_stack_usage(xIpcpTaskHandle, "MainTask");
         // ipconfigWATCHDOG_TIMER();
 
         /* Check the RINA timers to see if there is any periodic
@@ -271,12 +277,12 @@ static void *prvIpcpTask(void *pvParameters)
 
         switch (xReceivedEvent.eEventType)
         {
-            case eNetworkRxEvent:
+        case eNetworkRxEvent:
             /* The network hardware driver has received a new packet.  A
              * pointer to the received buffer is located in the pvData member
              * of the received event structure. */
-            
-            //vIpcManagerRINAPackettHandler
+
+            // vIpcManagerRINAPackettHandler
             break;
 
         case eNetworkTxEvent:
@@ -287,7 +293,7 @@ static void *prvIpcpTask(void *pvParameters)
 
             /* Send a network packet. The ownership will  be transferred to
              * the driver, which will release it after delivery. */
-            //xNetworkInterfaceOutput(pxDescriptor, true);
+            // xNetworkInterfaceOutput(pxDescriptor, true);
             xIeee802154NetworkInterfaceOutput(pxDescriptor, true);
         }
         break;
@@ -310,6 +316,10 @@ static void *prvIpcpTask(void *pvParameters)
             /* Normal IPCP request a Flow Allocation to the Shim */
             (void)prvIpcpFlowRequest(pxShimInstance, xN1PortId, pxIpcpData->pxName);
             // vIPCPTimerStart(&xN1FlowAllocatedTimer, 10000);
+#if SHIM_802154_MODULE
+            // pxShimInstance->pxOps->flowAllocateResponse(pxShimInstance->pxData, xN1PortId);
+            //(void)vEnrollmentInit(pxIpcpData, xN1PortId);
+#endif
 
             break;
 

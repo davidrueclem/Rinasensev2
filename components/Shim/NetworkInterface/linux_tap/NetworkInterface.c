@@ -603,7 +603,9 @@ bool_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
         pxNetworkBuffer->xEthernetDataLength = len;
 
         /* Copy the packet data. */
+        heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
         memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
+        heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
         xRxEvent.xData.PV = (void *)pxNetworkBuffer;
 
         if (!xSendEventStructToIPCPTask(&xRxEvent, 250 * 1000))

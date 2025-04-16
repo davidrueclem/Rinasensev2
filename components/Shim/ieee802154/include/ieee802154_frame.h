@@ -15,19 +15,27 @@ extern "C"
 #define FRAME_VERSION_STD_2006 1
 #define FRAME_VERSION_STD_2015 2
 
-#define ADDR_MODE_NONE     (0)  // PAN ID and address fields are not present
-#define ADDR_MODE_RESERVED (1)  // Reseved
-#define ADDR_MODE_SHORT    (2)  // Short address (16-bit)
-#define ADDR_MODE_LONG     (3)  // Extended address (64-bit)
+#define ADDR_MODE_NONE (0)     // PAN ID and address fields are not present
+#define ADDR_MODE_RESERVED (1) // Reseved
+#define ADDR_MODE_SHORT (2)    // Short address (16-bit)
+#define ADDR_MODE_LONG (3)     // Extended address (64-bit)
+                               /*
+                               #define FRAME_TYPE_BEACON (0)
+                               #define FRAME_TYPE_DATA (1)
+                               #define FRAME_TYPE_ACK (2)
+                               #define FRAME_TYPE_MAC_COMMAND (3)
+                               #define FRAME_TYPE_RESERVED (4)
+                               #define FRAME_TYPE_MULTIPURPOSE (5)
+                               #define FRAME_TYPE_FRAGMENT (6)
+                               #define FRAME_TYPE_EXTENDED (7)*/
 
-#define FRAME_TYPE_BEACON (0)
-#define FRAME_TYPE_DATA (1)
-#define FRAME_TYPE_ACK (2)
-#define FRAME_TYPE_MAC_COMMAND (3)
-#define FRAME_TYPE_RESERVED (4)
-#define FRAME_TYPE_MULTIPURPOSE (5)
-#define FRAME_TYPE_FRAGMENT (6)
-#define FRAME_TYPE_EXTENDED (7)
+    typedef enum
+    {
+        eFRAME_TYPE_BEACON = 0,
+        eFRAME_TYPE_DATA = 1,
+        eFRAME_TYPE_ACK = 2,
+        eFRAME_TYPE_MAC_COMMAND = 3
+    } ieee802154_frame_type_t;
 
     typedef struct
     {
@@ -69,10 +77,31 @@ extern "C"
         uint8_t srcAddrType : 2;
     } mac_fcs_t;
 
+    typedef enum
+    {
+        FRAME_TYPE_ASSOC_REQ = 0x01,
+        FRAME_TYPE_ASSOC_RESP = 0x02,
+        FRAME_TYPE_DATA = 0x03
+    } custom_frame_type_t;
 
-    uint8_t ieee802154_header(const uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
-                          ieee802154_address_t *dst, uint8_t ack, uint8_t *header, uint8_t header_length);
-    
+    typedef struct
+    {
+        uint8_t frame_type;
+        // uint8_t device_capabilities;
+        // uint64_t mac_address; // Si usas dirección extendida
+        // Otros campos si quieres
+    } __attribute__((packed)) association_request_t;
+
+    typedef struct
+    {
+        uint8_t frame_type;
+        // uint16_t short_address;
+        uint8_t status; // accepted or rejected
+    } __attribute__((packed)) association_response_t;
+
+    uint8_t ieee802154_header(ieee802154_frame_type_t frame_type, uint16_t *src_pan, ieee802154_address_t *src, const uint16_t *dst_pan,
+                              ieee802154_address_t *dst, uint8_t ack, uint8_t *header, uint8_t header_length);
+
     typedef enum IEEE802154_FRAMES_PROCESSING
     {
         eIeee802154ReleaseBuffer = 0,   /* Processing the frame did not find anything to do - just release the buffer. */

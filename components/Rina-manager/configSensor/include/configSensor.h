@@ -97,7 +97,7 @@
 #define IPCP_TASK_PRIORITY (configMAX_PRIORITIES - 2)
 
 /* For ESP32, the "word" is 8 bytes */
-#define IPCP_TASK_STACK_SIZE (configMINIMAL_STACK_SIZE * 16)
+#define IPCP_TASK_STACK_SIZE (configMINIMAL_STACK_SIZE * 18)
 
 /*********   Configure Shim Parameters  ************/
 /*TAG for Debugging*/

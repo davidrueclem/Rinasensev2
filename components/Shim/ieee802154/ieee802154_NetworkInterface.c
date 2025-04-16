@@ -12,20 +12,6 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/event_groups.h"
-/* Standard includes. */
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "portability/port.h"
-
-/* FreeRTOS includes. */
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "freertos/event_groups.h"
 
 /* RINA Components includes. */
 #include "BufferManagement.h"
@@ -51,7 +37,7 @@
 #include <esp_log.h>
 
 /* Constants */
-#define TAG_802154 "ieee802154"
+// #define TAG_802154 "ieee802154"
 
 enum if_state_t
 {
@@ -59,22 +45,59 @@ enum if_state_t
     UP,
 };
 
+#define ASSOCIATION_EVENT (1 << 0) // Define el bit para la asociación
+#define IEEE802154_EVENT "IEEE802154_EVENT"
+#define IEEE802154_ASSOCIATION_REQUEST 0x0001
+#define IEEE802154_ASSOCIATION_RESPONSE 0x0002
+
+static EventGroupHandle_t s_wifi_event_group;
+
+void reply_event_handler(void *arg)
+{
+    // Procesar la respuesta de asociación
+    uint8_t *buffer = (uint8_t *)arg;
+
+    LOGE(TAG_802154, "Respuesta asociación recibida");
+
+    xEventGroupSetBits(s_wifi_event_group, ASSOCIATION_EVENT);
+
+    /*
+        if (is_association_response(buffer))
+        {
+            // La respuesta de asociación ha sido recibida
+            xEventGroupSetBits(s_wifi_event_group, ASSOCIATION_EVENT);
+        }
+            */
+}
+
+static void request_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    LOGE(TAG_802154, "Petición asociación recibida");
+    // Si el evento es una solicitud de asociación (Association Request)
+    if (strcmp(event_base, IEEE802154_EVENT) == 0 && event_id == IEEE802154_ASSOCIATION_REQUEST)
+    {
+        // Procesa la solicitud de asociación
+        association_request_t *assoc_request = (association_request_t *)event_data;
+
+        // La respuesta de asociación ha sido recibida
+        xEventGroupSetBits(s_wifi_event_group, ASSOCIATION_EVENT);
+    }
+}
+
 /* Variable State of Interface */
 volatile static uint32_t xInterfaceState = DOWN;
 
 void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
 {
+    LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
+
     if (!buffer || buffer[0] == 0)
     {
         LOGE(TAG_802154, "Received invalid packet");
-        return;
     }
-
-    LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
 
     xIeee802154NetworkInterfaceInput(&buffer[1], buffer[0], NULL);
 }
-
 
 bool_t xIeee802154NetworkInterfaceInitialise(MACAddress_t *pxPhyDev)
 {
@@ -90,26 +113,77 @@ bool_t xIeee802154NetworkInterfaceInitialise(MACAddress_t *pxPhyDev)
     /* Reverse the MAC address */
     for (int i = 0; i < MAC_ADDRESS_LENGTH_BYTES; i++)
     {
-        pxPhyDev->ucBytes[i] = ucMACAddress[MAC_ADDRESS_LENGTH_BYTES-1 - i];
+        pxPhyDev->ucBytes[i] = ucMACAddress[MAC_ADDRESS_LENGTH_BYTES - 1 - i];
     }
     esp_ieee802154_set_extended_address(pxPhyDev->ucBytes);
     esp_ieee802154_set_short_address(ieee802154_SHORT_ADDRESS);
 
     xInterfaceState = UP;
-   
- 
 
     return true;
 }
 
-bool_t xIeee802154NetworkInterfaceConnect(void){
+void xIeee802154NetworkInterfaceAssociation_Response(uint8_t *buffer)
+{
+
+    if (esp_ieee802154_transmit(buffer, false) == ESP_OK)
+    {
+        LOGI(TAG_802154, "Frame transmitted successfully");
+    }
+    else
+    {
+        LOGE(TAG_802154, "Failed to transmit frame");
+    }
+}
+
+void xIeee802154NetworkInterfaceAssociation_Request(void)
+{
+    LOGI(TAG_802154, "Associating to IEEE 802.15.4 network");
+    static uint8_t buffer[128];
+    uint8_t hdrLen;
+    uint8_t payload = 0x01; // request
+    ieee802154_address_t srcAddr, dstAddr;
+
+    uint16_t pan_id = ieee802154_PANID_SOURCE;
+    esp_ieee802154_set_panid(pan_id);
+
+    srcAddr.mode = ADDR_MODE_LONG;
+    esp_ieee802154_get_extended_address(srcAddr.long_address);
+
+    dstAddr.mode = ADDR_MODE_SHORT;
+    dstAddr.short_address = ieee802154_SHORT_ADDRESS_DESTINATION; // Hardcoded Short Address
+
+    hdrLen = ieee802154_header(eFRAME_TYPE_MAC_COMMAND, &pan_id, &srcAddr, &pan_id, &dstAddr, false, &buffer[1], sizeof(buffer) - 1);
+    buffer[0] = hdrLen + 1;
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+    memcpy(&buffer[1], &payload, 1);
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
+    if (esp_ieee802154_transmit(buffer, false) == ESP_OK)
+    {
+        LOGI(TAG_802154, "Frame transmitted successfully");
+    }
+    else
+    {
+        LOGE(TAG_802154, "Failed to transmit frame");
+    }
+}
+
+bool_t xIeee802154NetworkInterfaceConnect(void)
+{
     LOGI(TAG_802154, "Connecting to IEEE 802.15.4 network");
 
-#ifdef ieee802154_COORDINATOR
-    esp_ieee802154_set_coordinator(true);
-#else
-    esp_ieee802154_set_coordinator(false);
-#endif
+    if (ieee802154_COORDINATOR == 0)
+    {
+        LOGI(TAG_802154, "--------------COORDINADOR------------");
+
+        esp_ieee802154_set_coordinator(true);
+    }
+    else
+    {
+        esp_ieee802154_set_coordinator(false);
+    }
+
     esp_ieee802154_set_channel(ieee802154_CHANNEL);
     esp_ieee802154_set_panid(ieee802154_PANID_SOURCE);
 
@@ -124,6 +198,112 @@ bool_t xIeee802154NetworkInterfaceConnect(void){
 
     return true;
 }
+/*
+
+bool_t xIeee802154NetworkInterfaceConnect(void)
+{
+    LOGI(TAG_802154, "Connecting to IEEE 802.15.4 network");
+
+    s_wifi_event_group = xEventGroupCreate();
+
+    LOGI(TAG_SHIM, "Creating event Loop");
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default()); // EventTask init
+
+    esp_event_handler_instance_t instance;
+
+    if (ieee802154_COORDINATOR == 0)
+    {
+        LOGI(TAG_802154, "--------------COORDINADOR------------");
+
+        esp_ieee802154_set_coordinator(true);
+
+        esp_ieee802154_set_channel(ieee802154_CHANNEL);
+        esp_ieee802154_set_panid(ieee802154_PANID_SOURCE);
+
+        esp_ieee802154_receive();
+
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(
+            IEEE802154_EVENT,               // Base del evento (en este caso IEEE 802.15.4)
+            IEEE802154_ASSOCIATION_REQUEST, // Evento específico (solicitud de asociación)
+            &request_event_handler,         // La función que manejará el evento
+            NULL,                           // Datos adicionales para el handler (si es necesario)
+            &instance                       // Instancia que identifica este manejador
+            ));
+    }
+    else
+    {
+
+        esp_ieee802154_set_coordinator(false);
+
+        esp_ieee802154_set_channel(ieee802154_CHANNEL);
+        esp_ieee802154_set_panid(ieee802154_PANID_SOURCE);
+
+        esp_ieee802154_receive();
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(
+            IEEE802154_EVENT,                // Base del evento (en este caso IEEE 802.15.4)
+            IEEE802154_ASSOCIATION_RESPONSE, // Evento específico (solicitud de asociación)
+            &reply_event_handler,            // La función que manejará el evento
+            NULL,                            // Datos adicionales para el handler (si es necesario)
+            &instance                        // Instancia que identifica este manejador
+            ));
+    }
+
+    // si no es coordinador entonces debe enviar un asociation request. Se debería hacer un scan primero para validar
+    //  si está disponible la red con el pan ID definido.
+    if (ieee802154_COORDINATOR != 0)
+    {
+        xIeee802154NetworkInterfaceAssociation_Request();
+
+        EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, ASSOCIATION_EVENT, pdFALSE, pdFALSE, portMAX_DELAY);
+
+        if (bits & ASSOCIATION_EVENT)
+        {
+            // Recibió la respuesta de asociación correctamente
+            printf("Asociación exitosa\n");
+            // Continuar con el resto de las tareas
+            uint8_t extended_address[8];
+            esp_ieee802154_get_extended_address(extended_address);
+            LOGI(TAG_802154, "Connected: PAN ID: 0x%04x, Channel: %d, MAC: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+                 esp_ieee802154_get_panid(), esp_ieee802154_get_channel(),
+                 extended_address[0], extended_address[1], extended_address[2], extended_address[3],
+                 extended_address[4], extended_address[5], extended_address[6], extended_address[7]);
+            return true;
+        }
+        else
+        {
+            // Se agotó el tiempo de espera sin respuesta
+            printf("Fallo en la asociación\n");
+            return false;
+        }
+    }
+    else
+    {
+
+        EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, ASSOCIATION_EVENT, pdFALSE, pdFALSE, portMAX_DELAY);
+
+        if (bits & ASSOCIATION_EVENT)
+        {
+            // Recibió la respuesta de asociación correctamente
+            printf("Asociación exitosa\n");
+            // Continuar con el resto de las tareas
+            uint8_t extended_address[8];
+            esp_ieee802154_get_extended_address(extended_address);
+            LOGI(TAG_802154, "Connected: PAN ID: 0x%04x, Channel: %d, MAC: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+                 esp_ieee802154_get_panid(), esp_ieee802154_get_channel(),
+                 extended_address[0], extended_address[1], extended_address[2], extended_address[3],
+                 extended_address[4], extended_address[5], extended_address[6], extended_address[7]);
+            return true;
+        }
+        else
+        {
+            // Se agotó el tiempo de espera sin respuesta
+            printf("Fallo en la asociación\n");
+            return false;
+        }
+    }
+    return true;
+}*/
 
 bool_t xIeee802154NetworkInterfaceDisconnect(void)
 {
@@ -132,19 +312,38 @@ bool_t xIeee802154NetworkInterfaceDisconnect(void)
     return true;
 }
 
-
 esp_err_t xIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 {
+
+    assert(len < 128); // o tu MTU
+    // LOGI("802154_DRIVER", "Calling xIeee802154NetworkInterfaceInput, buffer=%p, len=%d", buffer, len);
+    // LOGE(TAG_802154, "Packet too large (%d bytes)", len);
+
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
     NetworkBufferDescriptor_t *pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(len, 0);
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
+    assert(pxNetworkBuffer->pucEthernetBuffer != NULL);
+    assert(len < 1500); // o tu MTU
+
     if (!pxNetworkBuffer)
     {
+        heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
         LOGE(TAG_802154, "Failed to allocate network buffer");
-        vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
+
+        // vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
+        heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+
         return ESP_FAIL;
     }
 
+    // LOGE(TAG_802154, "Test");
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
+    // LOGE(TAG_802154, "Packet too large (%d bytes)", len);
     memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
     pxNetworkBuffer->xEthernetDataLength = len;
+    heap_caps_check_integrity(MALLOC_CAP_DEFAULT, pdTRUE);
 
     return xProcessIEEE802154Packet(pxNetworkBuffer);
 }

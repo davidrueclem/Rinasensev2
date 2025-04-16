@@ -11,7 +11,12 @@
         "rina_common_port.h": "c",
         "list.h": "c",
         "pthread.h": "c",
-        "wifi_ipcp.h": "c"
+        "wifi_ipcp.h": "c",
+        "ipcp_manager.h": "c",
+        "configrina.h": "c",
+        "ieee802154_networkinterface.h": "c",
+        "rina_gpha.h": "c",
+        "port.h": "c"
     },
-    "idf.portWin": "COM3"
+    "idf.portWin": "COM7"
 }
