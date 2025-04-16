@@ -58,6 +58,7 @@ void vHandleIEEE802154Frame(NetworkBufferDescriptor_t *pxNetworkBuffer)
     debug_print_packet(pucBuffer, usLength);
 
     mac_fcs_t *pxFrameHeader = (mac_fcs_t *)pucBuffer;
+    //if FRAME_TYPE_MAC_COMMAND then router envia comando 03 con un valor(1 rquest/2 response) router procesa la asosiacion
     if (pxFrameHeader->frameType == FRAME_TYPE_DATA)
     {
         LOGI(TAG_802154, "Processing DATA frame");

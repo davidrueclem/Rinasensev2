@@ -267,17 +267,6 @@ bool_t xShim802154ApplicationRegister(struct ipcpInstanceData_t *pxData, name_t 
 
     //pxData->pxDafHandle = pxARPAdd(pxPa, pxHa);
 
-    if (!pxData->pxDafHandle)
-    {
-        LOGE(TAG_SHIM_802154, "Failed to register DAF in ARP");
-        //xARPRemove(pxData->pxAppHandle->pxPa, pxData->pxAppHandle->pxHa);
-        pxData->pxAppHandle = NULL;
-        vRstrNameFree(pxData->pxAppName);
-        vRstrNameFree(pxData->pxDafName);
-        vGPADestroy(pxPa);
-        vGHADestroy(pxHa);
-        return false;
-    }
 
     //vARPPrintCache();
 
@@ -358,7 +347,7 @@ bool_t xShimFlowAllocateResponse(struct ipcpInstanceData_t *pxShimInstanceData,
     pxFlow->ePortIdState = eALLOCATED;
     pxFlow->xPortId = xPortId;
 
-    pxFlow->pxDestHa = pxARPLookupGHA(pxFlow->pxDestPa);
+    //pxFlow->pxDestHa = pxARPLookupGHA(pxFlow->pxDestPa);
 
     if (pxFlow->ePortIdState == eALLOCATED)
     {

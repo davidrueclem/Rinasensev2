@@ -208,7 +208,11 @@ void vEnrollmentInit(struct ipcpInstanceData_t *pxIpcpData, portId_t xN1PortId)
         /*Creating Operational Status into the the RIB*/
         pxRibCreateObject("/difm/ops", 1, "OperationalStatus", "OperationalStatus", OPERATIONAL);
 
-        (void)xRibdConnectToIpcp(pxIpcpData, pxSource, pxDestInfo, xN1PortId, pxAuth);
+        #ifdef ieee802154_COORDINATOR 
+        
+        #else
+                (void)xRibdConnectToIpcp(pxIpcpData, pxSource, pxDestInfo, xN1PortId, pxAuth);
+        #endif
 }
 
 bool_t xEnrollmentEnroller(struct ribObject_t *pxEnrRibObj,

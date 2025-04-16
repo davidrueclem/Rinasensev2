@@ -32,6 +32,7 @@
 #include "du.h"
 #include "flowAllocator_api.h"
 #include "ieee802154_NetworkInterface.h"
+#include "ieee802154_frame.h"
 
 #include "rina_api.h"
 
@@ -275,7 +276,10 @@ static void *prvIpcpTask(void *pvParameters)
             /* The network hardware driver has received a new packet.  A
              * pointer to the received buffer is located in the pvData member
              * of the received event structure. */
-            
+            NetworkBufferDescriptor_t *pxDescriptor;
+
+            pxDescriptor = (NetworkBufferDescriptor_t *)xReceivedEvent.xData.PV;
+            xProcessIEEE802154Packet(pxDescriptor);
             //vIpcManagerRINAPackettHandler
             break;
 
