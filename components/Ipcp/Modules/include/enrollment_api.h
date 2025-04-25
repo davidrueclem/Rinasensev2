@@ -17,6 +17,7 @@ bool_t xEnrollmentEnroller(struct ribObject_t *pxEnrRibObj, serObjectValue_t *px
                            string_t pcLocalApName, int invokeId, portId_t xN1Port);
 
 bool_t xEnrollmentHandleConnectR(struct ipcpInstanceData_t *pxData, string_t pcRemoteProcessName, portId_t xN1Port);
+bool_t xEnrollmentHandleConnect(struct ipcpInstanceData_t *pxData, string_t pcRemoteProcessName, portId_t xN1Port);
 bool_t xEnrollmentHandleStartR(string_t pcRemoteApName, serObjectValue_t *pxSerObjValue);
 bool_t xEnrollmentHandleStopR(string_t pcRemoteApName);
 

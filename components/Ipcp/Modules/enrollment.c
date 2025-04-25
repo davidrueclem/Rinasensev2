@@ -208,9 +208,7 @@ void vEnrollmentInit(struct ipcpInstanceData_t *pxIpcpData, portId_t xN1PortId)
         /*Creating Operational Status into the the RIB*/
         pxRibCreateObject("/difm/ops", 1, "OperationalStatus", "OperationalStatus", OPERATIONAL);
 
-        #ifdef ieee802154_COORDINATOR 
-        
-        #else
+        #if ieee802154_COORDINATOR == 1 
                 (void)xRibdConnectToIpcp(pxIpcpData, pxSource, pxDestInfo, xN1PortId, pxAuth);
         #endif
 }
@@ -308,6 +306,56 @@ bool_t xEnrollmentEnroller(struct ribObject_t *pxEnrRibObj,
         return true;
 }
 
+bool_t xEnrollmentHandleConnect(struct ipcpInstanceData_t *pxData, string_t pcRemoteApName, portId_t xN1Port)
+{
+        neighborInfo_t *pxNeighbor = NULL;
+        struct rmt_t *pxRmt;
+
+        // Check if the neighbor is already in the neighbor list, add it if not
+        pxNeighbor = pxEnrollmentFindNeighbor(pcRemoteApName);
+
+        if (pxNeighbor == NULL)
+        {
+                // We don't know the neigh address yet, set it -1 by now. We need to
+                // wait for the M_START CDAP msg
+                pxNeighbor = pxEnrollmentCreateNeighInfo(pcRemoteApName, xN1Port);
+        }
+
+        pxNeighbor->eEnrollmentState = eENROLLMENT_IN_PROGRESS;
+
+        pxRmt = pxData->pxRmt;
+        name_t *pxSource;
+        name_t *pxDestInfo;
+        // porId_t xN1FlowPortId;
+        authPolicy_t *pxAuth;
+        // appConnection_t *test;
+        // test = pvPortMalloc(sizeof(*test));
+
+        pxSource = pvRsMemAlloc(sizeof(*pxSource));
+        pxDestInfo = pvRsMemAlloc(sizeof(*pxDestInfo));
+        pxAuth = pvRsMemAlloc(sizeof(*pxAuth));
+
+        pxSource->pcEntityInstance = NORMAL_ENTITY_INSTANCE;
+        pxSource->pcEntityName = MANAGEMENT_AE;
+
+        pxSource->pcProcessInstance = NORMAL_PROCESS_INSTANCE;
+        pxSource->pcProcessName = NORMAL_PROCESS_NAME;
+
+        pxDestInfo->pcProcessName = REMOTE_ADDRESS_AP_NAME;
+        pxDestInfo->pcProcessInstance = NORMAL_PROCESS_INSTANCE;
+        pxDestInfo->pcEntityInstance = NORMAL_ENTITY_INSTANCE;
+        pxDestInfo->pcEntityName = MANAGEMENT_AE;
+
+        pxAuth->ucAbsSyntax = 1;
+        pxAuth->pcVersion = "1";
+        pxAuth->pcName = "PSOC_authentication-none";
+
+        (void) xRibdConnectRToIpcp(pxData, pxSource, pxDestInfo, xN1Port, pxAuth);
+
+  
+     
+        return true;
+}
 bool_t xEnrollmentHandleConnectR(struct ipcpInstanceData_t *pxData, string_t pcRemoteApName, portId_t xN1Port)
 {
         neighborInfo_t *pxNeighbor = NULL;

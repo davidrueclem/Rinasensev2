@@ -156,7 +156,7 @@ bool_t xIpcpTaskReady(void)
  * @return pdPASS if the event was sent (or the desired effect was achieved). Else, pdFAIL.
  */
 bool_t xSendEventStructToIPCPTask(const RINAStackEvent_t *pxEvent, useconds_t xTimeOutUS)
-{
+{   
     bool_t xReturn, xSendMessage;
     useconds_t xCalculatedTimeOutUS = xTimeOutUS;
 

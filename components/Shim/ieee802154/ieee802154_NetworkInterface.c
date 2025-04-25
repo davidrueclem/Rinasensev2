@@ -53,6 +53,14 @@ enum if_state_t
 #define IEEE802154_ASSOCIATION_REQUEST 0x0001
 #define IEEE802154_ASSOCIATION_RESPONSE 0x0002
 
+#define IEEE802154_MAX_FRAME_SIZE 127
+
+static uint8_t rx_temp_buffer[IEEE802154_MAX_FRAME_SIZE];
+static uint16_t rx_temp_len = 0;
+static TaskHandle_t xShimRxTaskHandle = NULL;
+void vShimRxTask(void *pvParameters);
+
+
 static EventGroupHandle_t s_wifi_event_group;
 
 void reply_event_handler(void *arg)
@@ -89,17 +97,25 @@ void reply_event_handler(void *arg)
 
 /* Variable State of Interface */
 volatile static uint32_t xInterfaceState = DOWN;
+
 void esp_ieee802154_receive_done(uint8_t *buffer, esp_ieee802154_frame_info_t *frame_info)
 {
-    ESP_EARLY_LOGI(TAG_802154, "RX OK, received %d bytes", buffer[0]);
-
-    // LOGI(TAG_802154, "Sending to NI input, buffer=%p len=%d", &buffer[1], buffer[0]);
-    if (!buffer || buffer[0] == 0)
-    {
+    if (!buffer || buffer[0] == 0) {
         ESP_EARLY_LOGI(TAG_802154, "Received invalid packet");
+        return;
     }
 
-    vIeee802154NetworkInterfaceInput(&buffer[1], buffer[0], NULL);
+    if (buffer[0] > IEEE802154_MAX_FRAME_SIZE) {
+        ESP_EARLY_LOGI(TAG_802154, "Packet too large");
+        return;
+    }
+
+    // Copiar el paquete a un buffer temporal (excluyendo el primer byte de longitud)
+    memcpy(rx_temp_buffer, &buffer[1], buffer[0]);
+    rx_temp_len = buffer[0];
+
+    // Notificar a la tarea
+    vTaskNotifyGiveFromISR(xShimRxTaskHandle, NULL);
 }
 
 bool_t xIeee802154NetworkInterfaceInitialise(MACAddress_t *pxPhyDev)
@@ -122,6 +138,7 @@ bool_t xIeee802154NetworkInterfaceInitialise(MACAddress_t *pxPhyDev)
     esp_ieee802154_set_short_address(ieee802154_SHORT_ADDRESS);
 
     xInterfaceState = UP;
+    xTaskCreate(vShimRxTask, "ShimRxTask", 4096, NULL, 10, &xShimRxTaskHandle);
 
     return true;
 }
@@ -332,19 +349,30 @@ void vIeee802154NetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
         vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
     }
 
-    // LOGE(TAG_802154, "Packet too large (%d bytes)", len);
+  
     memcpy(pxNetworkBuffer->pucEthernetBuffer, buffer, len);
 
     pxNetworkBuffer->xEthernetDataLength = len;
 
     xRxEvent.xData.PV = (void *)pxNetworkBuffer;
 
-    // LOGE(TAG_RINA, "pucEthernetBuffer and len: %p, %d", pxNetworkBuffer->pucEthernetBuffer, len);
-
+     
     if (xSendEventStructToIPCPTask(&xRxEvent, xDescriptorWaitTime) == pdFAIL)
-    {
+    {   
+    
         LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
-        vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
+   
+    }
+
+}
+void vShimRxTask(void *pvParameters)
+{
+    for (;;)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // Esperar notificación
+
+        // Procesar paquete recibido
+        vIeee802154NetworkInterfaceInput(rx_temp_buffer, rx_temp_len, NULL);
     }
 }
 

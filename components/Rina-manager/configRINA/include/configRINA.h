@@ -15,7 +15,7 @@
 #define ieee802154_SHORT_ADDRESS_DESTINATION 0x0002
 #define PAN_BROADCAST 0xFFFF
 #define SHORT_BROADCAST 0xFFFF
-#define ieee802154_MTU (256)
+#define ieee802154_MTU (127)
 
 /************* SHIM WIFI CONFIGURATION ***********/
 #define SHIM_WIFI_MODULE (0) // Zero if not shim WiFi modules is required.

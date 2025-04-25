@@ -10,11 +10,11 @@ extern "C" {
 
 typedef uint32_t portId_t;
 
-#ifdef SHIM_802154_MODULE
-typedef uint16_t seqNum_t;
-#else
+
+
+
+
 typedef uint32_t seqNum_t;
-#endif
 
 /* CEPIdLength field 1 Byte*/
 typedef uint8_t  cepId_t;

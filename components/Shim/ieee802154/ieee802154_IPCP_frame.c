@@ -41,7 +41,7 @@
 #define PAN_BROADCAST 0xFFFF
 
 static void debug_print_packet(uint8_t *packet, uint8_t packet_length);
-
+static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n);
 /* Function to process received IEEE 802.15.4 frame */
 void vHandleIEEE802154Frame(NetworkBufferDescriptor_t *pxNetworkBuffer)
 {
@@ -74,13 +74,22 @@ void vHandleIEEE802154Frame(NetworkBufferDescriptor_t *pxNetworkBuffer)
 
 esp_err_t xProcessIEEE802154Packet(NetworkBufferDescriptor_t *pxNetworkBuffer)
 {
+    LOGI(TAG_802154, "---- Dumping received packet ----");
+for (int i = 0; i < pxNetworkBuffer->xEthernetDataLength; i++) {
+    printf("%02X ", pxNetworkBuffer->pucEthernetBuffer[i]);
+    if ((i + 1) % 16 == 0) {
+        printf("\n");
+    }
+}
+printf("\n----------------------------------\n");
+
     uint8_t *packet = pxNetworkBuffer->pucEthernetBuffer;
     uint8_t position = 0;
 
     mac_fcs_t *fcs = (mac_fcs_t *)&packet[position];
 
-    position += sizeof(uint16_t); // Frame Control Field size
-
+    position += 2; // Frame Control Field size
+    position += 1; //seq_number
     if (fcs->rfu1)
     {
         LOGE(TAG_802154, "Reserved field is set, ignoring packet");
@@ -149,17 +158,24 @@ esp_err_t xProcessIEEE802154Packet(NetworkBufferDescriptor_t *pxNetworkBuffer)
         is_for_me = true;
         break;
 
-    case ADDR_MODE_SHORT:
-        pan_id = *((uint16_t *)&packet[position]);
-        position += sizeof(uint16_t);
-        short_dst_addr = *((uint16_t *)&packet[position]);
-        position += sizeof(uint16_t);
-
+        case ADDR_MODE_SHORT:
+        // PAN ID
+        pan_id = (packet[position + 1] << 8) | packet[position];
+        position += 2;
+    
+        // Dirección corta de destino
+        short_dst_addr = (packet[position + 1] << 8) | packet[position];
+        position += 4;
+    
+        LOGI(TAG_802154, "Panid in packet: 0x%04x", pan_id);
+        LOGI(TAG_802154, "Short destination address in packet: 0x%04x", short_dst_addr);
+    
         if (short_dst_addr == my_short_addr)
             is_for_me = true;
         else if (short_dst_addr == 0xFFFF)
             is_broadcast = true;
         break;
+    
 
     case ADDR_MODE_LONG:
         pan_id = *((uint16_t *)&packet[position]);
@@ -201,12 +217,20 @@ esp_err_t xProcessIEEE802154Packet(NetworkBufferDescriptor_t *pxNetworkBuffer)
 
     /* Extraer la SDU eliminando la cabecera */
     uint8_t *sdu = &packet[position];
-    uint16_t sdu_length = pxNetworkBuffer->xEthernetDataLength - position - sizeof(uint16_t); // Restar el checksum
-    position += sdu_length;
+    uint16_t sdu_length = pxNetworkBuffer->xEthernetDataLength - position; 
 
     pxNetworkBuffer->pucRinaBuffer = sdu;
     pxNetworkBuffer->xRinaDataLength = sdu_length;
 
+    LOGI(TAG_802154, "---- Dumping received packet ----");
+    for (int i = 0; i < pxNetworkBuffer->xRinaDataLength; i++) {
+        printf("%02X ", pxNetworkBuffer->pucRinaBuffer[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n----------------------------------\n");
+    
     /* Crear el du_t */
     struct du_t *pxMessagePDU = pvRsMemAlloc(sizeof(*pxMessagePDU));
     if (!pxMessagePDU)
@@ -372,7 +396,7 @@ uint8_t ieee802154_header(const uint16_t *pan_id, ieee802154_address_t *src, iee
     return position;
 }
 
-static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n);
+
 static void reverse_memcpy_local(uint8_t *restrict dst, const uint8_t *restrict src, size_t n)
 {
     size_t i;
