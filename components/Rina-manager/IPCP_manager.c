@@ -98,10 +98,11 @@ struct ipcpInstance_t *pxIpcManagerActiveNormalInstance(void)
 
 struct ipcpInstance_t *pxIpcManagerActiveShimInstance()
 {
-#ifdef SHIM_WIFI_MODULE
+#if SHIM_WIFI_MODULE
+
     return pxIpcManagerFindInstanceByType(eShimWiFi);
-#endif
-#ifdef SHIM_802154_MODULE
+#elif SHIM_802154_MODULE
+
     return pxIpcManagerFindInstanceByType(eShim802154);
 #endif
 }
@@ -143,7 +144,7 @@ struct ipcpInstance_t *pxIpcMngrCreateShim()
     /*#ifdef SHIM_WIFI_MODULE
         return pxShimWiFiCreate(xIpcpId);
     #endif*/
-#ifdef SHIM_802154_MODULE
+#if SHIM_802154_MODULE
     return pxShim802154Create(xIpcpId);
 #endif
 }
